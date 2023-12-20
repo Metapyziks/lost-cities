@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LostCities.Game": {
+      "commandName": "Project",
+      "commandLineArgs": "--player1 ..\\..\\..\\..\\Examples\\LostCities.Examples.Greedy\\bin\\Debug\\net7.0\\LostCities.Examples.Greedy.exe\r\n--player2 ..\\..\\..\\..\\Examples\\LostCities.Examples.Greedy\\bin\\Debug\\net7.0\\LostCities.Examples.Greedy.exe\r\n--games 100\r\n--parallel"
+    }
+  }
+}
