@@ -4,41 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace LostCities.Game;
 
-public record struct GameConfig( int Index, int GameSeed, int Player1Seed, int Player2Seed );
-
-public record GameResult( int Index, GameState InitialState, GameState FinalState, IReadOnlyList<PlayerAction> Actions, Player Disqualified )
-{
-    [JsonIgnore]
-    public PlayerState Player1FinalState => FinalState.Player1;
-
-    [JsonIgnore]
-    public PlayerState Player2FinalState => FinalState.Player2;
-
-    [JsonIgnore]
-    public Player Winner =>
-        Disqualified switch
-        {
-            Player.Player1 => Player.Player2,
-            Player.Player2 => Player.Player1,
-            _ => Player1FinalState.Score.CompareTo( Player2FinalState.Score ) switch
-            {
-                > 0 => Player.Player1,
-                < 0 => Player.Player2,
-                _ => Player.None
-            }
-        };
-
-    public PlayerState GetFinalState( Player player )
-    {
-        return player switch
-        {
-            Player.Player1 => Player1FinalState,
-            Player.Player2 => Player2FinalState,
-            _ => throw new ArgumentException()
-        };
-    }
-}
-
 public class Program
 {
     /// <summary>
@@ -46,17 +11,19 @@ public class Program
     /// </summary>
     /// <param name="player1">Command to run for player 1.</param>
     /// <param name="player2">Command to run for player 2.</param>
+    /// <param name="output">File path to write game results.</param>
     /// <param name="gameSeed">Seed to use when shuffling the deck.</param>
     /// <param name="player1Seed">Seed to pass to player 1.</param>
     /// <param name="player2Seed">Seed to pass to player 2.</param>
     /// <param name="games">How many games to play in a row.</param>
     /// <param name="parallel">If true, run many games simultaneously.</param>
-    public static async Task<int> Main( FileInfo player1, FileInfo player2,
+    /// <param name="fullResults">If true, output full results to file.</param>
+    public static async Task<int> Main( FileInfo player1, FileInfo player2, FileInfo? output = null,
         int? gameSeed = null, int? player1Seed = null, int? player2Seed = null,
-        int games = 1, bool parallel = false )
+        int games = 1, bool parallel = false, bool fullResults = false )
     {
         var configs = Enumerable.Range( 0, games )
-            .Select( i => new GameConfig( i,
+            .Select( i => new GameConfig(
                 gameSeed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
                 player1Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
                 player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) ) )
@@ -68,14 +35,26 @@ public class Program
 
         var results = await task;
 
+        if ( games == 1 )
+        {
+            PrintGameConfig( configs[0] );
+            PrintGameResult( results[0] );
+        }
+
         Console.WriteLine();
-        Console.WriteLine( $"=== Final Results ===" );
+        Console.WriteLine( "=== Final Results ===" );
         Console.WriteLine();
 
         PrintPlayerStats( results, Player.Player1 );
         Console.WriteLine();
         PrintPlayerStats( results, Player.Player2 );
         Console.WriteLine();
+
+        if ( output != null )
+        {
+            var resultData = new GameResults( configs, results, fullResults );
+            await File.WriteAllTextAsync( output.FullName, resultData.ToJson() );
+        }
 
         return 0;
     }
@@ -86,12 +65,8 @@ public class Program
 
         foreach ( var config in configs )
         {
-            PrintGameConfig( config, configs.Count );
-
             var result = await RunGameAsync( player1Path, player2Path, config );
             results.Add( result );
-
-            PrintGameResult( result );
         }
 
         return results;
@@ -99,12 +74,12 @@ public class Program
 
     private static async Task<IReadOnlyList<GameResult>> RunGamesParallelAsync( string player1Path, string player2Path, IReadOnlyList<GameConfig> configs )
     {
-        var results = new ConcurrentBag<GameResult>();
+        var results = new ConcurrentBag<(int Index, GameResult Result)>();
 
-        var task = Parallel.ForEachAsync( configs, async ( config, _ ) =>
+        var task = Parallel.ForEachAsync( configs.Select( (x, i) => (Index: i, Config: x) ), async ( x, _ ) =>
         {
-            var result = await RunGameAsync( player1Path, player2Path, config );
-            results.Add( result );
+            var result = await RunGameAsync( player1Path, player2Path, x.Config );
+            results.Add( (x.Index, result) );
         } );
 
         var top = Console.CursorTop;
@@ -127,13 +102,10 @@ public class Program
 
         await task;
 
-        var sortedResults = results.OrderBy( x => x.Index ).ToArray();
-
-        foreach ( var result in sortedResults )
-        {
-            PrintGameConfig( configs[result.Index], configs.Count );
-            PrintGameResult( result );
-        }
+        var sortedResults = results
+            .OrderBy( x => x.Index )
+            .Select( x => x.Result )
+            .ToArray();
 
         return sortedResults;
     }
@@ -161,14 +133,14 @@ public class Program
 
             if ( action == null )
             {
-                return new GameResult( config.Index, initialState, state, actions, state.CurrentPlayer );
+                return new GameResult( initialState, state, actions, state.CurrentPlayer );
             }
 
             actions.Add( action );
             state = state.WithAction( action );
         }
 
-        return new GameResult( config.Index, initialState, state, actions, Player.None );
+        return new GameResult( initialState, state, actions, Player.None );
     }
 
     private static void PrintPlayerState( Player player, PlayerState state )
@@ -210,10 +182,8 @@ public class Program
         Console.ResetColor();
     }
 
-    private static void PrintGameConfig( GameConfig config, int count )
+    private static void PrintGameConfig( GameConfig config )
     {
-        Console.WriteLine( $"=== Game {config.Index + 1} of {count} ===" );
-        Console.WriteLine();
         Console.WriteLine( $"Game Seed: {config.GameSeed}" );
         Console.WriteLine( $"{Player.Player1} Seed: {config.Player1Seed}" );
         Console.WriteLine( $"{Player.Player2} Seed: {config.Player2Seed}" );
