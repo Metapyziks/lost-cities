@@ -158,7 +158,7 @@ internal static class Global
         {
             new JsonStringEnumConverter()
         },
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 }
 

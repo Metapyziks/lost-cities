@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace LostCities;
@@ -30,7 +31,7 @@ public enum Value
     Ten
 }
 
-public record struct Card( Color Color, Value Value ) : IComparable<Card>
+public record struct Card( [property: JsonInclude] Color Color, [property: JsonInclude] Value Value ) : IComparable<Card>
 {
     public readonly int CompareTo( Card other )
     {

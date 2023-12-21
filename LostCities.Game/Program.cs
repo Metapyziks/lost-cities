@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace LostCities.Game;
 
@@ -16,11 +17,11 @@ public class Program
     /// <param name="player1Seed">Seed to pass to player 1.</param>
     /// <param name="player2Seed">Seed to pass to player 2.</param>
     /// <param name="games">How many games to play in a row.</param>
-    /// <param name="parallel">If true, run many games simultaneously.</param>
+    /// <param name="parallel">How many games to run simultaneously.</param>
     /// <param name="fullResults">If true, output full results to file.</param>
     public static async Task<int> Main( FileInfo player1, FileInfo player2, FileInfo? output = null,
         int? gameSeed = null, int? player1Seed = null, int? player2Seed = null,
-        int games = 1, bool parallel = false, bool fullResults = false )
+        int games = 1, int parallel = 1, bool fullResults = false )
     {
         var configs = Enumerable.Range( 0, games )
             .Select( i => new GameConfig(
@@ -29,8 +30,8 @@ public class Program
                 player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) ) )
             .ToArray();
 
-        var task = parallel
-            ? RunGamesParallelAsync( player1.FullName, player2.FullName, configs )
+        var task = parallel > 1
+            ? RunGamesParallelAsync( player1.FullName, player2.FullName, configs, parallel )
             : RunGamesAsync( player1.FullName, player2.FullName, configs );
 
         var results = await task;
@@ -63,20 +64,37 @@ public class Program
     {
         var results = new List<GameResult>( configs.Count );
 
+        var top = Console.CursorTop;
+
+        Console.CursorVisible = false;
+
         foreach ( var config in configs )
         {
+            Console.SetCursorPosition( 0, top );
+            Console.WriteLine( $"Completed {results.Count} of {configs.Count} games..." );
+
             var result = await RunGameAsync( player1Path, player2Path, config );
             results.Add( result );
         }
 
+        Console.SetCursorPosition( 0, top );
+        Console.WriteLine( $"Completed {results.Count} of {configs.Count} games   " );
+        Console.WriteLine();
+
+        Console.CursorVisible = true;
+
         return results;
     }
 
-    private static async Task<IReadOnlyList<GameResult>> RunGamesParallelAsync( string player1Path, string player2Path, IReadOnlyList<GameConfig> configs )
+    private static async Task<IReadOnlyList<GameResult>> RunGamesParallelAsync( string player1Path, string player2Path, IReadOnlyList<GameConfig> configs, int maxParallel )
     {
         var results = new ConcurrentBag<(int Index, GameResult Result)>();
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = maxParallel
+        };
 
-        var task = Parallel.ForEachAsync( configs.Select( (x, i) => (Index: i, Config: x) ), async ( x, _ ) =>
+        var task = Parallel.ForEachAsync( configs.Select( (x, i) => (Index: i, Config: x) ), options, async ( x, _ ) =>
         {
             var result = await RunGameAsync( player1Path, player2Path, x.Config );
             results.Add( (x.Index, result) );

@@ -9,9 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LostCities.Game", "LostCiti
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{EBFBF5CE-80F3-4416-92D9-B8B8063A2967}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LostCities.Examples.Random", "Examples\LostCities.Examples.Random\LostCities.Examples.Random.csproj", "{F0938344-99EB-4B19-9B85-AC3AC50231C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Random", "Examples\Random\Random.csproj", "{F0938344-99EB-4B19-9B85-AC3AC50231C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LostCities.Examples.Greedy", "Examples\LostCities.Examples.Greedy\LostCities.Examples.Greedy.csproj", "{56CFDF00-F6A8-4D16-AC32-C7B3AD75B9BE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Greedy", "Examples\Greedy\Greedy.csproj", "{56CFDF00-F6A8-4D16-AC32-C7B3AD75B9BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
