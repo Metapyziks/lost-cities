@@ -1,5 +1,7 @@
 @echo off
 
+dotnet build -c Release
+
 if not exist Results mkdir Results
 
 LostCities.Game\bin\Release\net7.0\LostCities.Game.exe ^
