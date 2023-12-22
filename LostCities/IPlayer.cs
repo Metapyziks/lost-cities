@@ -98,11 +98,30 @@ public class HumanConsolePlayer : ConsolePlayer
     {
         Console.Clear();
 
-        Console.WriteLine( $"====================" );
-        Console.WriteLine( $"= {Player}'s Turn! =" );
-        Console.WriteLine( $"====================" );
+        if ( view.LastAction is { } lastAction )
+        {
+            Console.Write( $"Your opponent {(lastAction.Discarded ? "discarded" : "played")} " );
+            PrintCard( lastAction.PlayedCard );
+            Console.Write( $"and drew " );
+
+            if ( lastAction.DrawnCard is { } opponentDrawnCard )
+            {
+                PrintCard( opponentDrawnCard );
+            }
+            else
+            {
+                Console.Write( $"from the Deck" );
+            }
+
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
+        Console.Write( $"Deck: {view.DeckCount} " );
+
+        var deckPos = (Left: Console.CursorLeft, Top: Console.CursorTop);
+
         Console.WriteLine();
-        Console.WriteLine( $"Deck: {view.DeckCount}" );
         Console.WriteLine();
 
         Console.Write( $"          " );
@@ -141,7 +160,12 @@ public class HumanConsolePlayer : ConsolePlayer
         var state = State.SelectCard;
         var top = Console.CursorTop;
         var selectedIndex = 0;
+        var drawFromDeck = true;
+        var drawIndex = 0;
         var discard = false;
+
+        Card playedCard = default;
+        Card? drawnCard = null;
 
         Console.CursorVisible = false;
 
@@ -160,22 +184,25 @@ public class HumanConsolePlayer : ConsolePlayer
                     }
 
                     Console.WriteLine();
-                    Console.WriteLine( $"Select a card       " );
+                    Console.WriteLine( $"Select a card" );
 
                     var key = Console.ReadKey( true );
 
                     switch ( key.Key )
                     {
                         case ConsoleKey.LeftArrow:
+                        case ConsoleKey.UpArrow:
                             selectedIndex = (selectedIndex + 7) & 7;
                             break;
 
                         case ConsoleKey.RightArrow:
+                        case ConsoleKey.DownArrow:
                             selectedIndex = (selectedIndex + 1) & 7;
                             break;
 
                         case ConsoleKey.Enter:
                             state = State.PlayOrDiscard;
+                            playedCard = sortedHand[selectedIndex];
                             break;
                     }
 
@@ -197,16 +224,24 @@ public class HumanConsolePlayer : ConsolePlayer
                     {
                         case ConsoleKey.UpArrow:
                         case ConsoleKey.DownArrow:
+                        case ConsoleKey.LeftArrow:
+                        case ConsoleKey.RightArrow:
                             discard = !discard;
                             break;
 
                         case ConsoleKey.Enter:
                             state = State.DrawCard;
+                            Console.CursorTop = top + 1;
+                            Console.WriteLine( $"                      " );
+                            Console.WriteLine( $"         " );
+                            Console.WriteLine( $"         " );
                             break;
 
                         case ConsoleKey.Backspace:
+                        case ConsoleKey.Escape:
                             state = State.SelectCard;
                             Console.CursorTop = top + 1;
+                            Console.WriteLine( $"                      " );
                             Console.WriteLine( $"         " );
                             Console.WriteLine( $"         " );
                             break;
@@ -217,19 +252,135 @@ public class HumanConsolePlayer : ConsolePlayer
 
                 case State.DrawCard:
                 {
+                    Color? discardedColor = discard ? playedCard.Color : null;
+
+                    var drawableCards = view.Discarded
+                        .Where( x => x.Value.Count > 0 )
+                        .Where( x => x.Key != discardedColor )
+                        .Select( x => x.Value[^1] )
+                        .ToArray();
+
+                    var index = 0;
+                    foreach ( var card in drawableCards )
+                    {
+                        var pos = discardPositions[card.Color];
+
+                        Console.CursorLeft = pos.Left;
+                        Console.CursorTop = pos.Top + 1;
+
+                        Console.Write( !drawFromDeck && drawIndex == index ? " ^^ " : "    " );
+                        ++index;
+                    }
+
+                    Console.CursorLeft = deckPos.Left;
+                    Console.CursorTop = deckPos.Top;
+
+                    Console.Write(  drawFromDeck ? "<" : " " );
+                    Console.CursorLeft = 0;
+
+                    if ( drawableCards.Length == 0 )
+                    {
+                        state = State.Confirm;
+                        break;
+                    }
+
+                    Console.CursorTop = top + 1;
+                    Console.Write($"Draw ");
+
+                    if ( !drawFromDeck )
+                    {
+                        PrintCard( drawableCards[drawIndex] );
+                        Console.WriteLine( "?    " );
+                    }
+                    else
+                    {
+                        Console.WriteLine( $"from Deck?" );
+                    }
+
+                    var key = Console.ReadKey( true );
+
+                    switch ( key.Key )
+                    {
+                        case ConsoleKey.UpArrow:
+                        case ConsoleKey.DownArrow:
+                            drawFromDeck = drawableCards.Length == 0 || !drawFromDeck;
+                            break;
+
+                        case ConsoleKey.LeftArrow:
+                            if ( drawableCards.Length > 0 )
+                            {
+                                drawFromDeck = false;
+                                drawIndex = (drawIndex + (drawableCards.Length - 1)) % drawableCards.Length;
+                            }
+                            break;
+
+                        case ConsoleKey.RightArrow:
+                            if ( drawableCards.Length > 0 )
+                            {
+                                drawFromDeck = false;
+                                drawIndex = (drawIndex + 1) % drawableCards.Length;
+                            }
+                            break;
+
+                        case ConsoleKey.Enter:
+                            state = State.Confirm;
+                            drawnCard = drawFromDeck ? null : drawableCards[drawIndex];
+                            Console.CursorTop = top + 1;
+                            Console.WriteLine( $"               " );
+                            break;
+
+                        case ConsoleKey.Backspace:
+                        case ConsoleKey.Escape:
+                            state = State.SelectCard;
+                            Console.CursorTop = top + 1;
+                            Console.WriteLine( $"               " );
+                            break;
+                    }
+
                     break;
                 }
 
-                default:
+                case State.Confirm:
                 {
-                    state = State.Done;
+                    Console.CursorTop = top + 1;
+                    Console.Write($"{(discard ? "Discard" : "Play")} ");
+                    PrintCard( playedCard );
+                    Console.Write($"and draw ");
+
+                    if ( drawnCard is { } card )
+                    {
+                        PrintCard( card );
+                    }
+                    else
+                    {
+                        Console.Write( "from Deck?" );
+                    }
+
+                    var key = Console.ReadKey( true );
+
+                    switch ( key.Key )
+                    {
+                        case ConsoleKey.Enter:
+                            state = State.Done;
+                            Console.CursorTop = top + 1;
+                            Console.WriteLine("                               ");
+                            break;
+
+                        case ConsoleKey.Backspace:
+                        case ConsoleKey.Escape:
+                            state = State.SelectCard;
+                            Console.CursorTop = top + 1;
+                            Console.WriteLine( "                               " );
+                            break;
+                    }
                     break;
                 }
             }
         }
 
         Console.CursorVisible = true;
-        throw new NotImplementedException();
+
+        return Task.FromResult( new PlayerAction( playedCard, discard, drawnCard ) )!;
     }
 }
 
