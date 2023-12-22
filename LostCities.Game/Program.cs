@@ -1,7 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Security.Cryptography;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace LostCities.Game;
 
@@ -10,8 +8,8 @@ public class Program
     /// <summary>
     /// Run one or more games with the given pair of players.
     /// </summary>
-    /// <param name="player1">Command to run for player 1.</param>
-    /// <param name="player2">Command to run for player 2.</param>
+    /// <param name="player1">Command to run for player 1. If null, will use standard input / output.</param>
+    /// <param name="player2">Command to run for player 2. If null, will use standard input / output.</param>
     /// <param name="output">File path to write game results.</param>
     /// <param name="gameSeed">Seed to use when shuffling the deck.</param>
     /// <param name="player1Seed">Seed to pass to player 1.</param>
@@ -19,9 +17,10 @@ public class Program
     /// <param name="games">How many games to play in a row.</param>
     /// <param name="parallel">How many games to run simultaneously.</param>
     /// <param name="fullResults">If true, output full results to file.</param>
-    public static async Task<int> Main( FileInfo player1, FileInfo player2, FileInfo? output = null,
+    /// <param name="human">If true, standard input / output players will have a human-readable interface.</param>
+    public static async Task<int> Main( FileInfo? player1 = null, FileInfo? player2 = null, FileInfo? output = null,
         int? gameSeed = null, int? player1Seed = null, int? player2Seed = null,
-        int games = 1, int parallel = 1, bool fullResults = false )
+        int games = 1, int parallel = 1, bool fullResults = false, bool human = false )
     {
         var configs = Enumerable.Range( 0, games )
             .Select( i => new GameConfig(
@@ -30,9 +29,14 @@ public class Program
                 player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) ) )
             .ToArray();
 
+        if ( parallel > 1 && (player1 == null || player2 == null) )
+        {
+            throw new ArgumentException( "Can't run multiple games simultaneously over standard input." );
+        }
+
         var task = parallel > 1
-            ? RunGamesParallelAsync( player1.FullName, player2.FullName, configs, parallel )
-            : RunGamesAsync( player1.FullName, player2.FullName, configs );
+            ? RunGamesParallelAsync( player1!.FullName, player2!.FullName, configs, parallel )
+            : RunGamesAsync( player1?.FullName, player2?.FullName, configs );
 
         var results = await task;
 
@@ -60,28 +64,22 @@ public class Program
         return 0;
     }
 
-    private static async Task<IReadOnlyList<GameResult>> RunGamesAsync( string player1Path, string player2Path, IReadOnlyList<GameConfig> configs )
+    private static async Task<IReadOnlyList<GameResult>> RunGamesAsync( string? player1Path, string? player2Path, IReadOnlyList<GameConfig> configs )
     {
         var results = new List<GameResult>( configs.Count );
 
         var top = Console.CursorTop;
 
-        Console.CursorVisible = false;
-
         foreach ( var config in configs )
         {
-            Console.SetCursorPosition( 0, top );
-            Console.WriteLine( $"Completed {results.Count} of {configs.Count} games..." );
+            Console.WriteLine( $"Game: {results.Count + 1}" );
 
             var result = await RunGameAsync( player1Path, player2Path, config );
             results.Add( result );
         }
 
-        Console.SetCursorPosition( 0, top );
-        Console.WriteLine( $"Completed {results.Count} of {configs.Count} games   " );
+        Console.WriteLine( "End" );
         Console.WriteLine();
-
-        Console.CursorVisible = true;
 
         return results;
     }
@@ -128,13 +126,20 @@ public class Program
         return sortedResults;
     }
 
-    private static async Task<GameResult> RunGameAsync( string player1Path, string player2Path, GameConfig config )
+    private static IPlayer CreatePlayer( string? path, Player player )
+    {
+        return string.IsNullOrEmpty( path )
+            ? new ConsolePlayer( Player.Player1 )
+            : new ChildProcessPlayer( path );
+    }
+
+    private static async Task<GameResult> RunGameAsync( string? player1Path, string? player2Path, GameConfig config )
     {
         var initialState = GameState.New( config.GameSeed, config.Player1Seed, config.Player2Seed );
         var state = initialState;
 
-        using var p1 = new PlayerHost( player1Path );
-        using var p2 = new PlayerHost( player2Path );
+        using var p1 = CreatePlayer( player1Path, Player.Player1 );
+        using var p2 = CreatePlayer( player2Path, Player.Player2 );
 
         var actions = new List<PlayerAction>();
 
@@ -147,7 +152,16 @@ public class Program
                 _ => throw new Exception()
             };
 
-            var action = await player.TakeTurnAsync( state.CurrentPlayerView );
+            PlayerAction? action;
+
+            try
+            {
+                action = await player.TakeTurnAsync( state.CurrentPlayerView );
+            }
+            catch
+            {
+                action = null;
+            }
 
             if ( action == null )
             {
@@ -232,6 +246,7 @@ public class Program
         Console.WriteLine( $"  Wins: {results.Count( x => x.Winner == player )}" );
         Console.WriteLine( $"  Ties: {results.Count( x => x.Winner == Player.None )}" );
         Console.WriteLine( $"  Losses: {results.Count( x => x.Winner != Player.None && x.Winner != player )}" );
+        Console.WriteLine( $"  Disqualified: {results.Count( x => x.Disqualified == player )}" );
         Console.WriteLine( $"  Best Score: {results.Max( x => x.GetFinalState( player ).Score )}" );
         Console.WriteLine( $"  Worst Score: {results.Min( x => x.GetFinalState( player ).Score )}" );
         Console.WriteLine( $"  Mean Score: {results.Average( x => x.GetFinalState( player ).Score )}" );
