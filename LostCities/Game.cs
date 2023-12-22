@@ -92,8 +92,9 @@ public static class LostCities
             {
                 action = await player.TakeTurnAsync( state.CurrentPlayerView );
             }
-            catch
+            catch ( Exception e )
             {
+                Console.Error.WriteLine( e );
                 action = null;
             }
 

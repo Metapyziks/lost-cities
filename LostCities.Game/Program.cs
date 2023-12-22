@@ -133,12 +133,12 @@ public class Program
             : new ChildProcessPlayer( path );
     }
 
-    private static Task<GameResult> RunGameAsync( string? player1Path, string? player2Path, GameConfig config, bool human )
+    private static async Task<GameResult> RunGameAsync( string? player1Path, string? player2Path, GameConfig config, bool human )
     {
         using var p1 = CreatePlayer( player1Path, Player.Player1, human );
         using var p2 = CreatePlayer( player2Path, Player.Player2, human );
 
-        return LostCities.RunGameAsync( config, p1, p2 );
+        return await LostCities.RunGameAsync( config, p1, p2 );
     }
 
     private static void PrintPlayerState( Player player, PlayerState state )

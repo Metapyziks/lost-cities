@@ -414,17 +414,10 @@ public class ChildProcessPlayer : IPlayer
 
     public async Task<PlayerAction?> TakeTurnAsync( PlayerView view )
     {
-        try
-        {
-            await Process.StandardInput.WriteLineAsync( view.ToJson() );
+        await Process.StandardInput.WriteLineAsync( view.ToJson() );
 
-            var response = await Process.StandardOutput.ReadLineAsync();
-            return response == null ? null : PlayerAction.FromJson( response );
-        }
-        catch
-        {
-            return null;
-        }
+        var response = await Process.StandardOutput.ReadLineAsync();
+        return response == null ? null : PlayerAction.FromJson( response );
     }
 
     public void Dispose()
