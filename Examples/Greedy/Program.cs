@@ -94,21 +94,12 @@ static IComparer<PlayerAction> CreateComparer( PlayerView view, IReadOnlyList<Ca
                 {
                     // Prefer to commit to colors with the highest sum in-hand
 
-                    var aMult = 1 + view.Hand
-                        .Count( x => x.Color == a.PlayedCard.Color && x.Value == Value.Wager );
-                    var aSum = aMult * view.Hand
-                        .Where( x => x.Color == a.PlayedCard.Color )
-                        .Sum( x => (int) x.Value );
+                    var aValue = view.Hand.Where( x => x.Color == a.PlayedCard.Color ).CalculateScore();
+                    var bValue = view.Hand.Where( x => x.Color == b.PlayedCard.Color ).CalculateScore();
 
-                    var bMult = 1 + view.Hand
-                        .Count( x => x.Color == b.PlayedCard.Color && x.Value == Value.Wager );
-                    var bSum = bMult * view.Hand
-                        .Where( x => x.Color == b.PlayedCard.Color )
-                        .Sum( x => (int) x.Value );
-
-                    if ( aSum != bSum )
+                    if ( aValue != bValue )
                     {
-                        return bSum - aSum;
+                        return bValue - aValue;
                     }
                 }
             }

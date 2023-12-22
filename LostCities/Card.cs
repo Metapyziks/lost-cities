@@ -7,30 +7,6 @@ using System.Threading.Tasks;
 
 namespace LostCities;
 
-public enum Color
-{
-    Red = 1,
-    Green,
-    Blue,
-    White,
-    Yellow,
-    Purple
-}
-
-public enum Value
-{
-    Wager = 0,
-    Two = 2,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
-    Ten
-}
-
 public record struct Card( [property: JsonInclude] Color Color, [property: JsonInclude] Value Value ) : IComparable<Card>
 {
     public readonly int CompareTo( Card other )

@@ -2,7 +2,7 @@
   "profiles": {
     "LostCities.Game": {
       "commandName": "Project",
-      "commandLineArgs": "--player1 Random.exe\r\n--player2 Greedy.exe\r\n--games 100\r\n--parallel 8\r\n--output random-vs-greedy-100.json",
+      "commandLineArgs": "--player1 Random.exe\r\n--player2 Greedy.exe\r\n--games 1",
       "workingDirectory": "..\\Examples\\bin\\Debug\\net7.0\\"
     }
   }
