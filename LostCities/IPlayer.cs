@@ -76,6 +76,11 @@ public class HumanConsolePlayer : ConsolePlayer
             Console.WriteLine();
         }
 
+        if ( max == 0 )
+        {
+            Console.WriteLine();
+        }
+
         return dict;
     }
 

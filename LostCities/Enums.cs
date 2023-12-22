@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace LostCities;
 
+/// <summary>
+/// Identifies a player, or <see cref="None"/>.
+/// </summary>
 public enum Player
 {
     None = 0,
@@ -13,6 +11,9 @@ public enum Player
     Player2 = 2
 }
 
+/// <summary>
+/// Identifies an expedition color.
+/// </summary>
 public enum Color
 {
     Red = 1,
@@ -23,6 +24,9 @@ public enum Color
     Purple
 }
 
+/// <summary>
+/// Either a numerical value for a card, or <see cref="Wager"/>.
+/// </summary>
 public enum Value
 {
     Wager = 0,

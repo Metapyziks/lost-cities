@@ -133,46 +133,12 @@ public class Program
             : new ChildProcessPlayer( path );
     }
 
-    private static async Task<GameResult> RunGameAsync( string? player1Path, string? player2Path, GameConfig config, bool human )
+    private static Task<GameResult> RunGameAsync( string? player1Path, string? player2Path, GameConfig config, bool human )
     {
-        var initialState = GameState.New( config.GameSeed, config.Player1Seed, config.Player2Seed );
-        var state = initialState;
-
         using var p1 = CreatePlayer( player1Path, Player.Player1, human );
         using var p2 = CreatePlayer( player2Path, Player.Player2, human );
 
-        var actions = new List<PlayerAction>();
-
-        while ( state.CurrentPlayer != Player.None )
-        {
-            var player = state.CurrentPlayer switch
-            {
-                Player.Player1 => p1,
-                Player.Player2 => p2,
-                _ => throw new Exception()
-            };
-
-            PlayerAction? action;
-
-            try
-            {
-                action = await player.TakeTurnAsync( state.CurrentPlayerView );
-            }
-            catch
-            {
-                action = null;
-            }
-
-            if ( action == null )
-            {
-                return new GameResult( initialState, state, actions, state.CurrentPlayer );
-            }
-
-            actions.Add( action );
-            state = state.WithAction( action );
-        }
-
-        return new GameResult( initialState, state, actions, Player.None );
+        return LostCities.RunGameAsync( config, p1, p2 );
     }
 
     private static void PrintPlayerState( Player player, PlayerState state )

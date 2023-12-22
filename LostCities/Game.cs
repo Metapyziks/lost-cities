@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace LostCities;
 
@@ -66,5 +67,52 @@ public record GameResults( IReadOnlyList<GameSummary> Summaries, IReadOnlyList<G
     public string ToJson()
     {
         return JsonSerializer.Serialize( this, Helpers.JsonOptions );
+    }
+}
+
+public static class LostCities
+{
+    public static async Task<GameResult> ContinueGameAsync( GameState state, IPlayer player1, IPlayer player2 )
+    {
+        var initialState = state;
+        var actions = new List<PlayerAction>();
+
+        while ( state.CurrentPlayer != Player.None )
+        {
+            var player = state.CurrentPlayer switch
+            {
+                Player.Player1 => player1,
+                Player.Player2 => player2,
+                _ => throw new Exception()
+            };
+
+            PlayerAction? action;
+
+            try
+            {
+                action = await player.TakeTurnAsync( state.CurrentPlayerView );
+            }
+            catch
+            {
+                action = null;
+            }
+
+            if ( action == null )
+            {
+                return new GameResult( initialState, state, actions, state.CurrentPlayer );
+            }
+
+            actions.Add( action );
+            state = state.WithAction( action );
+        }
+
+        return new GameResult( initialState, state, actions, Player.None );
+    }
+
+    public static Task<GameResult> RunGameAsync( GameConfig config, IPlayer player1, IPlayer player2 )
+    {
+        var initialState = GameState.New( config.GameSeed, config.Player1Seed, config.Player2Seed );
+
+        return ContinueGameAsync( initialState, player1, player2 );
     }
 }
