@@ -36,7 +36,7 @@ public class Program
 
         var task = parallel > 1
             ? RunGamesParallelAsync( player1!.FullName, player2!.FullName, configs, parallel )
-            : RunGamesAsync( player1?.FullName, player2?.FullName, configs );
+            : RunGamesAsync( player1?.FullName, player2?.FullName, configs, human );
 
         var results = await task;
 
@@ -64,7 +64,7 @@ public class Program
         return 0;
     }
 
-    private static async Task<IReadOnlyList<GameResult>> RunGamesAsync( string? player1Path, string? player2Path, IReadOnlyList<GameConfig> configs )
+    private static async Task<IReadOnlyList<GameResult>> RunGamesAsync( string? player1Path, string? player2Path, IReadOnlyList<GameConfig> configs, bool human )
     {
         var results = new List<GameResult>( configs.Count );
 
@@ -74,7 +74,7 @@ public class Program
         {
             Console.WriteLine( $"Game: {results.Count + 1}" );
 
-            var result = await RunGameAsync( player1Path, player2Path, config );
+            var result = await RunGameAsync( player1Path, player2Path, config, human );
             results.Add( result );
         }
 
@@ -94,7 +94,7 @@ public class Program
 
         var task = Parallel.ForEachAsync( configs.Select( (x, i) => (Index: i, Config: x) ), options, async ( x, _ ) =>
         {
-            var result = await RunGameAsync( player1Path, player2Path, x.Config );
+            var result = await RunGameAsync( player1Path, player2Path, x.Config, false );
             results.Add( (x.Index, result) );
         } );
 
@@ -126,20 +126,20 @@ public class Program
         return sortedResults;
     }
 
-    private static IPlayer CreatePlayer( string? path, Player player )
+    private static IPlayer CreatePlayer( string? path, Player player, bool human )
     {
         return string.IsNullOrEmpty( path )
-            ? new ConsolePlayer( Player.Player1 )
+            ? human ? new HumanConsolePlayer( player ) : new ConsolePlayer( player )
             : new ChildProcessPlayer( path );
     }
 
-    private static async Task<GameResult> RunGameAsync( string? player1Path, string? player2Path, GameConfig config )
+    private static async Task<GameResult> RunGameAsync( string? player1Path, string? player2Path, GameConfig config, bool human )
     {
         var initialState = GameState.New( config.GameSeed, config.Player1Seed, config.Player2Seed );
         var state = initialState;
 
-        using var p1 = CreatePlayer( player1Path, Player.Player1 );
-        using var p2 = CreatePlayer( player2Path, Player.Player2 );
+        using var p1 = CreatePlayer( player1Path, Player.Player1, human );
+        using var p2 = CreatePlayer( player2Path, Player.Player2, human );
 
         var actions = new List<PlayerAction>();
 
@@ -181,33 +181,12 @@ public class Program
 
         foreach ( var (color, cards) in state.Expeditions )
         {
-            switch ( color )
-            {
-                case Color.White:
-                    Console.ForegroundColor = ConsoleColor.White;
-                    break;
-                case Color.Yellow:
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    break;
-                case Color.Blue:
-                    Console.ForegroundColor = ConsoleColor.Blue;
-                    break;
-                case Color.Red:
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    break;
-                case Color.Green:
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    break;
-                case Color.Purple:
-                    Console.ForegroundColor = ConsoleColor.Magenta;
-                    break;
-            }
-
             var score = cards.Count == 0
                 ? 0
                 : (cards.Sum( x => (int)x.Value ) - 20)
                   * (1 + cards.Count( x => x.Value == Value.Wager ));
 
+            Console.ForegroundColor = color.ToConsoleColor();
             Console.WriteLine( $"  {color}: {string.Join( ", ", cards.Select( x => x.Value.ToString() ) )} ({score})" );
         }
 

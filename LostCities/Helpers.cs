@@ -77,4 +77,46 @@ public static class Helpers
 
         return copy;
     }
+
+    public static string ToAbbreviation( this Color color )
+    {
+        switch ( color )
+        {
+            case Color.White:
+                return "Wt";
+            case Color.Yellow:
+                return "Yw";
+            case Color.Blue:
+                return "Bl";
+            case Color.Red:
+                return "Rd";
+            case Color.Green:
+                return "Gn";
+            case Color.Purple:
+                return "Pl";
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    public static ConsoleColor ToConsoleColor( this Color color )
+    {
+        switch ( color )
+        {
+            case Color.White:
+                return ConsoleColor.Gray;
+            case Color.Yellow:
+                return ConsoleColor.Yellow;
+            case Color.Blue:
+                return ConsoleColor.Blue;
+            case Color.Red:
+                return ConsoleColor.Red;
+            case Color.Green:
+                return ConsoleColor.Green;
+            case Color.Purple:
+                return ConsoleColor.Magenta;
+            default:
+                throw new NotImplementedException();
+        }
+    }
 }
