@@ -3,6 +3,20 @@ using System.Text.Json;
 
 namespace LostCities;
 
+/// <summary>
+/// A view of a game from a player's perspective. This includes all public
+/// information, and their private hand information.
+/// </summary>
+/// <param name="Seed">
+/// A random number this player should use when initializing any PRNG, so they can act deterministically.
+/// This will be the same for each turn.
+/// </param>
+/// <param name="DeckCount">How many cards remain in the deck.</param>
+/// <param name="Hand">The values and colors of each card in the player's hand.</param>
+/// <param name="PlayerExpeditions">Cards this player has previously played to an expedition.</param>
+/// <param name="OpponentExpeditions">Cards the opponent has previously played to an expedition.</param>
+/// <param name="Discarded">Cards that are currently in each discard pile.</param>
+/// <param name="LastAction">The last action taken by the opposing player, or null on the very first turn.</param>
 public record PlayerView( int Seed, int DeckCount,
     IReadOnlyList<Card> Hand,
     IReadOnlyDictionary<Color, IReadOnlyList<Card>> PlayerExpeditions,
@@ -34,6 +48,9 @@ public record PlayerView( int Seed, int DeckCount,
         return JsonSerializer.Deserialize<PlayerView>( value, Helpers.JsonOptions )!;
     }
 
+    /// <summary>
+    /// All hand cards that can currently be played to an expedition.
+    /// </summary>
     [JsonIgnore]
     public IReadOnlySet<Card> PlayableCards
     {
@@ -53,6 +70,9 @@ public record PlayerView( int Seed, int DeckCount,
         }
     }
 
+    /// <summary>
+    /// All possible legal actions from the current game state.
+    /// </summary>
     [JsonIgnore]
     public IReadOnlySet<PlayerAction> ValidActions
     {
