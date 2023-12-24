@@ -2,11 +2,16 @@
 
 namespace LostCities.Client;
 
-[JsonPolymorphic]
-public abstract record ServerMessage();
+[JsonDerivedType( typeof(NewGameMessage), typeDiscriminator: "new_game" )]
+[JsonDerivedType( typeof(TurnMessage), typeDiscriminator: "turn" )]
+[JsonDerivedType( typeof(EndGameMessage), typeDiscriminator: "end_game" )]
+[JsonDerivedType( typeof(KickMessage), typeDiscriminator: "kick" )]
+public abstract record ServerMessage;
 
-[JsonPolymorphic]
-public abstract record ClientMessage();
+[JsonDerivedType( typeof(InitializeMessage), typeDiscriminator: "init" )]
+[JsonDerivedType( typeof(AcceptGameMessage), typeDiscriminator: "accept_game" )]
+[JsonDerivedType( typeof(ActionMessage), "action" )]
+public abstract record ClientMessage;
 
 public record InitializeMessage(
     [property: JsonPropertyName( "token" )]

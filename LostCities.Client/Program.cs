@@ -68,24 +68,35 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
 
     sendQueue.Enqueue( new InitializeMessage( playerToken, version, maxParallelGames ) );
 
+    _ = Task.Run( async () =>
+    {
+        try
+        {
+            while ( client.Connected )
+            {
+                if ( sendQueue.Count == 0 )
+                {
+                    await Task.Delay( 10 );
+                }
+
+                while ( sendQueue.TryDequeue( out var clientMessage ) )
+                {
+                    await writer.WriteLineAsync( JsonSerializer.Serialize( clientMessage, jsonOptions ) );
+                }
+
+                await writer.FlushAsync();
+            }
+        }
+        catch ( Exception e )
+        {
+            Console.WriteLine( e );
+        }
+    } );
+
     try
     {
-        while ( true )
+        while ( await reader.ReadLineAsync() is {} line )
         {
-            while ( sendQueue.TryDequeue( out var clientMessage ) )
-            {
-                await writer.WriteLineAsync( JsonSerializer.Serialize( clientMessage, jsonOptions ) );
-            }
-
-            await writer.FlushAsync();
-
-            var line = await reader.ReadLineAsync().WaitAsync( TimeSpan.FromMilliseconds( 10 ) );
-
-            if ( line == null )
-            {
-                continue;
-            }
-
             var serverMessage = JsonSerializer.Deserialize<ServerMessage>( line, jsonOptions );
 
             switch ( serverMessage )
