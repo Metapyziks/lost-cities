@@ -45,7 +45,7 @@ public record GameSummary( GameConfig Config, Player FirstTurn, Player Winner, P
     public GameSummary( GameConfig config, GameResult result )
     : this (config, result.InitialState.CurrentPlayer, result.Winner, result.Disqualified,
         result.Disqualified == Player.None ? result.FinalState.Player1.Score : null,
-        result.Disqualified == Player.None ? result.FinalState.Player1.Score : null )
+        result.Disqualified == Player.None ? result.FinalState.Player2.Score : null )
     {
 
     }
