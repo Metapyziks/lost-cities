@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LostCities.Client": {
+      "commandName": "Project",
+      "commandLineArgs": "--hostname 192.168.178.51\r\n--token jamesbot\r\n--player C:\\Users\\metap\\source\\repos\\LostCities\\Examples\\bin\\Release\\net7.0\\Greedy.exe"
+    }
+  }
+}

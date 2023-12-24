@@ -50,8 +50,6 @@ var jsonOptions = new JsonSerializerOptions
     }
 };
 
-var gameTimeout = TimeSpan.FromMinutes( 5d );
-
 rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, maxParallelGames) =>
 {
     var client = new TcpClient();
