@@ -50,9 +50,6 @@ var jsonOptions = new JsonSerializerOptions
     }
 };
 
-const double expireTimeSeconds = 5d * 60d;
-
-
 rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, maxParallelGames) =>
 {
     var client = new TcpClient();
