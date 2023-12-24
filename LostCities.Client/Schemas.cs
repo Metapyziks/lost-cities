@@ -2,24 +2,21 @@
 
 namespace LostCities.Client;
 
-[JsonDerivedType( typeof(NewGameMessage), typeDiscriminator: "new_game" )]
-[JsonDerivedType( typeof(TurnMessage), typeDiscriminator: "turn" )]
-[JsonDerivedType( typeof(EndGameMessage), typeDiscriminator: "end_game" )]
-[JsonDerivedType( typeof(KickMessage), typeDiscriminator: "kick" )]
+[JsonDerivedType( typeof(NewGameMessage), "new_game" )]
+[JsonDerivedType( typeof(TurnMessage), "turn" )]
+[JsonDerivedType( typeof(EndGameMessage), "end_game" )]
+[JsonDerivedType( typeof(KickMessage), "kick" )]
 public abstract record ServerMessage;
 
-[JsonDerivedType( typeof(InitializeMessage), typeDiscriminator: "init" )]
-[JsonDerivedType( typeof(AcceptGameMessage), typeDiscriminator: "accept_game" )]
+[JsonDerivedType( typeof(InitializeMessage), "init" )]
+[JsonDerivedType( typeof(AcceptGameMessage), "accept_game" )]
 [JsonDerivedType( typeof(ActionMessage), "action" )]
 public abstract record ClientMessage;
 
 public record InitializeMessage(
-    [property: JsonPropertyName( "token" )]
-    string Token,
-    [property: JsonPropertyName( "version" )]
-    string? Version,
-    [property: JsonPropertyName( "max_parallel" )]
-    int MaxParallel )
+    [property: JsonPropertyName( "token" )] string Token,
+    [property: JsonPropertyName( "version" )] string? Version,
+    [property: JsonPropertyName( "max_games_concurrently" )] int MaxParallel )
     : ClientMessage;
 
 public record NewGameMessage(

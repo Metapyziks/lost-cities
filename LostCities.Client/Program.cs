@@ -57,6 +57,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
     await client.ConnectAsync( hostName, port );
 
     Console.WriteLine( "Connected!" );
+    Console.WriteLine( "Press Ctrl+C to stop accepting games" );
 
     await using var stream = client.GetStream();
     await using var writer = new StreamWriter( stream );
@@ -66,7 +67,26 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
     var runningGames = new Dictionary<string, IPlayer>();
     var sendQueue = new ConcurrentQueue<ClientMessage>();
 
+    var cancelPressed = false;
+
     sendQueue.Enqueue( new InitializeMessage( playerToken, version, maxParallelGames ) );
+
+    Console.CancelKeyPress += ( sender, ev ) =>
+    {
+        if ( cancelPressed || runningGames.Count == 0 )
+        {
+            Console.WriteLine( $"Exiting immediately" );
+            System.Environment.Exit( 0 );
+        }
+        else
+        {
+            Console.WriteLine( $"Waiting for all active games to finish before exiting" );
+            Console.WriteLine( $"Press Ctrl+C again to immediately exit, forfeiting {runningGames.Count} games" );
+
+            ev.Cancel = false;
+            cancelPressed = true;
+        }
+    };
 
     _ = Task.Run( async () =>
     {
@@ -95,7 +115,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
 
     try
     {
-        while ( await reader.ReadLineAsync() is {} line )
+        while ( await reader.ReadLineAsync() is { } line )
         {
             var serverMessage = JsonSerializer.Deserialize<ServerMessage>( line, jsonOptions );
 
@@ -103,7 +123,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
             {
                 case NewGameMessage newGameMessage:
                 {
-                    if ( runningGames.Count >= maxParallelGames )
+                    if ( runningGames.Count >= maxParallelGames || cancelPressed )
                     {
                         sendQueue.Enqueue( new AcceptGameMessage( newGameMessage.Id, false ) );
                     }
@@ -114,6 +134,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                             new ChildProcessPlayer( playerCmd[0], playerCmd.Skip( 1 ).ToArray() );
                         sendQueue.Enqueue( new AcceptGameMessage( newGameMessage.Id, true ) );
                     }
+
                     break;
                 }
 
@@ -128,7 +149,8 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     _ = player.TakeTurnAsync( PlayerView.FromJson( turnMessage.ViewJson ) )
                         .ContinueWith( async action =>
                         {
-                            sendQueue.Enqueue( new ActionMessage( turnMessage.Id, (await action)?.ToJson() ?? "" ) );
+                            sendQueue.Enqueue( new ActionMessage( turnMessage.Id,
+                                (await action)?.ToJson() ?? "" ) );
                         } );
                     break;
                 }
@@ -144,6 +166,12 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     Console.WriteLine( endGameMessage.ResultJson );
                     runningGames.Remove( endGameMessage.Id );
                     player.Dispose();
+
+                    if ( cancelPressed && runningGames.Count == 0 )
+                    {
+                        return;
+                    }
+
                     break;
                 }
 
