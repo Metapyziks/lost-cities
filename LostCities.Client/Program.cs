@@ -50,6 +50,9 @@ var jsonOptions = new JsonSerializerOptions
     }
 };
 
+const double expireTimeSeconds = 5d * 60d;
+
+
 rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, maxParallelGames) =>
 {
     var client = new TcpClient();
@@ -64,7 +67,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
 
     using var reader = new StreamReader( stream );
 
-    var runningGames = new Dictionary<string, IPlayer>();
+    var runningGames = new Dictionary<string, RunningGame>();
     var sendQueue = new ConcurrentQueue<ClientMessage>();
 
     var cancelPressed = false;
@@ -123,6 +126,17 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
             {
                 case NewGameMessage newGameMessage:
                 {
+                    var expired = runningGames
+                        .Where( x => x.Value.HasExpired )
+                        .ToArray();
+
+                    foreach ( var expiredGame in expired )
+                    {
+                        Console.WriteLine( $"Game Expired: {expiredGame.Key}" );
+                        runningGames.Remove( expiredGame.Key );
+                        expiredGame.Value.Dispose();
+                    }
+
                     if ( runningGames.Count >= maxParallelGames || cancelPressed )
                     {
                         sendQueue.Enqueue( new AcceptGameMessage( newGameMessage.Id, false ) );
@@ -131,7 +145,8 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     {
                         Console.WriteLine( $"New Game: {newGameMessage.Id}" );
                         runningGames[newGameMessage.Id] =
-                            new ChildProcessPlayer( playerCmd[0], playerCmd.Skip( 1 ).ToArray() );
+                            new RunningGame( new ChildProcessPlayer( playerCmd[0], playerCmd.Skip( 1 ).ToArray() ),
+                                TimeSpan.FromSeconds( newGameMessage.MaxTurnTime ?? 60d ) );
                         sendQueue.Enqueue( new AcceptGameMessage( newGameMessage.Id, true ) );
                     }
 
@@ -146,12 +161,8 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     }
 
                     Console.WriteLine( $"Turn: {turnMessage.Id}" );
-                    _ = player.TakeTurnAsync( PlayerView.FromJson( turnMessage.ViewJson ) )
-                        .ContinueWith( async action =>
-                        {
-                            sendQueue.Enqueue( new ActionMessage( turnMessage.Id,
-                                (await action)?.ToJson() ?? "" ) );
-                        } );
+                    player.TakeTurn( PlayerView.FromJson( turnMessage.ViewJson ), action =>
+                        sendQueue.Enqueue( new ActionMessage( turnMessage.Id, action?.ToJson() ?? "" ) ) );
                     break;
                 }
 

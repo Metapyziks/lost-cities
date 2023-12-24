@@ -20,7 +20,8 @@ public record InitializeMessage(
     : ClientMessage;
 
 public record NewGameMessage(
-    [property: JsonPropertyName( "id" )] string Id )
+    [property: JsonPropertyName( "id" )] string Id,
+    [property: JsonPropertyName( "max_turn_time" )] double? MaxTurnTime )
     : ServerMessage;
 
 public record AcceptGameMessage(
@@ -35,7 +36,7 @@ public record TurnMessage(
 
 public record ActionMessage(
     [property: JsonPropertyName( "id" )] string Id,
-    [property: JsonPropertyName( "action_json" )] string ViewJson )
+    [property: JsonPropertyName( "action_json" )] string ActionJson )
     : ClientMessage;
 
 public record EndGameMessage(
