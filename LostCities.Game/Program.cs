@@ -138,17 +138,16 @@ public class Program
     {
         var results = new List<GameResult>( configs.Count );
 
-        var top = Console.CursorTop;
-
         foreach ( var config in configs )
         {
             Console.WriteLine( $"Game: {results.Count + 1}" );
 
             var result = await RunGameAsync( player1Cmd, player2Cmd, config, human );
             results.Add( result );
+
+            Console.WriteLine( $"End: {new GameSummary( config, result ).ToJson()}" );
         }
 
-        Console.WriteLine( "End" );
         Console.WriteLine();
 
         return results;
