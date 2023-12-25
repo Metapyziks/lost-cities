@@ -41,6 +41,7 @@ public record ActionMessage(
 
 public record EndGameMessage(
     [property: JsonPropertyName( "id" )] string Id,
+    [property: JsonPropertyName( "player" )] int Player,
     [property: JsonPropertyName( "result_json" )] string ResultJson )
     : ServerMessage;
 

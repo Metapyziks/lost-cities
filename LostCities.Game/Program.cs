@@ -145,7 +145,7 @@ public class Program
             var result = await RunGameAsync( player1Cmd, player2Cmd, config, human );
             results.Add( result );
 
-            Console.WriteLine( $"End: {new GameSummary( config, result ).ToJson()}" );
+            Console.WriteLine( $"End: {GameSummary.FromResult( config, result ).ToJson()}" );
         }
 
         Console.WriteLine();

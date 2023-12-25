@@ -57,12 +57,13 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
     await client.ConnectAsync( hostName, port );
 
     Console.WriteLine( "Connected!" );
-    Console.WriteLine( "Press Ctrl+C to stop accepting games" );
 
     await using var stream = client.GetStream();
     await using var writer = new StreamWriter( stream );
 
     using var reader = new StreamReader( stream );
+
+    var results = new List<(int Player, GameSummary Summary)>();
 
     var runningGames = new Dictionary<string, RunningGame>();
     var sendQueue = new ConcurrentQueue<ClientMessage>();
@@ -70,6 +71,29 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
     var cancelPressed = false;
 
     sendQueue.Enqueue( new InitializeMessage( playerToken, version, maxParallelGames ) );
+
+    void UpdateDisplay()
+    {
+        Console.Clear();
+
+        if ( cancelPressed )
+        {
+            Console.WriteLine( $"Waiting for all active games to finish before exiting" );
+            Console.WriteLine( $"Press Ctrl+C again to immediately exit, forfeiting active games" );
+        }
+        else
+        {
+            Console.WriteLine( "Press Ctrl+C to stop accepting games" );
+        }
+
+        var winCount = results.Count( x => (int)x.Summary.Winner == x.Player );
+
+        Console.WriteLine();
+        Console.WriteLine( $"Active game count: {runningGames.Count}" );
+        Console.WriteLine( $"Completed games: {results.Count}" );
+        Console.WriteLine( $"Win rate: {(results.Count == 0 ? "N/A" : winCount * 100d / results.Count):F1}%" );
+        Console.WriteLine();
+    }
 
     Console.CancelKeyPress += ( sender, ev ) =>
     {
@@ -80,11 +104,10 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
         }
         else
         {
-            Console.WriteLine( $"Waiting for all active games to finish before exiting" );
-            Console.WriteLine( $"Press Ctrl+C again to immediately exit, forfeiting {runningGames.Count} games" );
-
             ev.Cancel = false;
             cancelPressed = true;
+
+            UpdateDisplay();
         }
     };
 
@@ -129,7 +152,6 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
 
                     foreach ( var expiredGame in expired )
                     {
-                        Console.WriteLine( $"Game Expired: {expiredGame.Key}" );
                         runningGames.Remove( expiredGame.Key );
                         expiredGame.Value.Dispose();
                     }
@@ -140,13 +162,13 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     }
                     else
                     {
-                        Console.WriteLine( $"New Game: {newGameMessage.Id}" );
                         runningGames[newGameMessage.Id] =
                             new RunningGame( new ChildProcessPlayer( playerCmd[0], playerCmd.Skip( 1 ).ToArray() ),
                                 TimeSpan.FromSeconds( newGameMessage.MaxTurnTime ?? 60d ) );
                         sendQueue.Enqueue( new AcceptGameMessage( newGameMessage.Id, true ) );
                     }
 
+                    UpdateDisplay();
                     break;
                 }
 
@@ -157,7 +179,6 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                         break;
                     }
 
-                    Console.WriteLine( $"Turn: {turnMessage.Id}" );
                     player.TakeTurn( PlayerView.FromJson( turnMessage.ViewJson ), action =>
                         sendQueue.Enqueue( new ActionMessage( turnMessage.Id, action?.ToJson() ?? "" ) ) );
                     break;
@@ -170,16 +191,21 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                         break;
                     }
 
-                    Console.WriteLine( $"EndGame: {endGameMessage.Id}" );
-                    Console.WriteLine( endGameMessage.ResultJson );
                     runningGames.Remove( endGameMessage.Id );
                     player.Dispose();
+
+                    Console.WriteLine( endGameMessage.ResultJson );
+
+                    var result = GameSummary.FromJson( endGameMessage.ResultJson );
+
+                    results.Add( (endGameMessage.Player, result) );
 
                     if ( cancelPressed && runningGames.Count == 0 )
                     {
                         return;
                     }
 
+                    UpdateDisplay();
                     break;
                 }
 

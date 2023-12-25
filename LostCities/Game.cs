@@ -42,12 +42,16 @@ public record GameResult( GameState InitialState, GameState FinalState, IReadOnl
 public record GameSummary( GameConfig Config, Player FirstTurn, Player Winner, Player Disqualified, int? Player1Score,
     int? Player2Score )
 {
-    public GameSummary( GameConfig config, GameResult result )
-    : this (config, result.InitialState.CurrentPlayer, result.Winner, result.Disqualified,
-        result.Disqualified == Player.None ? result.FinalState.Player1.Score : null,
-        result.Disqualified == Player.None ? result.FinalState.Player2.Score : null )
+    public static GameSummary FromResult( GameConfig config, GameResult result )
     {
+        return new GameSummary( config, result.InitialState.CurrentPlayer, result.Winner, result.Disqualified,
+            result.Disqualified == Player.None ? result.FinalState.Player1.Score : null,
+            result.Disqualified == Player.None ? result.FinalState.Player2.Score : null );
+    }
 
+    public static GameSummary FromJson( string value )
+    {
+        return JsonSerializer.Deserialize<GameSummary>( value, Helpers.JsonOptions )!;
     }
 
     public string ToJson()
@@ -61,7 +65,7 @@ public record GameResults( IReadOnlyList<GameSummary> Summaries, IReadOnlyList<G
     private static IReadOnlyList<GameSummary> GenerateSummaries( IReadOnlyList<GameConfig> configs, IReadOnlyList<GameResult> results )
     {
         return results
-            .Select( ( x, i ) => new GameSummary( configs[i], x ) )
+            .Select( ( x, i ) => GameSummary.FromResult( configs[i], x ) )
             .ToArray();
     }
 
