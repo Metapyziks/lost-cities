@@ -92,6 +92,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
         Console.WriteLine( $"Active game count: {runningGames.Count}" );
         Console.WriteLine( $"Completed games: {results.Count}" );
         Console.WriteLine( $"Win rate: {(results.Count == 0 ? "N/A" : winCount * 100d / results.Count):F1}%" );
+        Console.WriteLine( $"Disqualified: {results.Count( x => (int)x.Summary.Disqualified == x.Player )}" );
         Console.WriteLine();
     }
 
@@ -199,6 +200,11 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     var result = GameSummary.FromJson( endGameMessage.ResultJson );
 
                     results.Add( (endGameMessage.Player, result) );
+
+                    if ( (int) result.Disqualified == endGameMessage.Player )
+                    {
+                        cancelPressed = true;
+                    }
 
                     if ( cancelPressed && runningGames.Count == 0 )
                     {
