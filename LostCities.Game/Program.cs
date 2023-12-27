@@ -51,6 +51,11 @@ public class Program
             description: "How many games to play in a row.",
             getDefaultValue: () => 1 );
 
+        var endlessOption = new Option<bool>(
+            name: "--endless",
+            description: "If true, keep running games until terminated externally.",
+            getDefaultValue: () => false );
+
         var maxParallelCountOption = new Option<int>(
             name: "--max-parallel",
             description: "How many games to run simultaneously.",
@@ -70,7 +75,7 @@ public class Program
         {
             player1Option, player2Option, outputOption,
             gameSeedOption, player1SeedOption, player2SeedOption,
-            gameCountOption, maxParallelCountOption,
+            gameCountOption, endlessOption, maxParallelCountOption,
             fullResultsOption, humanPlayerOption
         };
 
@@ -83,21 +88,35 @@ public class Program
             var player1Seed = context.ParseResult.GetValueForOption( player1SeedOption );
             var player2Seed = context.ParseResult.GetValueForOption( player2SeedOption );
             var gameCount = context.ParseResult.GetValueForOption( gameCountOption );
+            var endless = context.ParseResult.GetValueForOption( endlessOption );
             var maxParallelCount = context.ParseResult.GetValueForOption( maxParallelCountOption );
             var fullResults = context.ParseResult.GetValueForOption( fullResultsOption );
             var humanPlayer = context.ParseResult.GetValueForOption( humanPlayerOption );
+
+            if ( maxParallelCount > 1 && (player1Cmd.Length == 0 || player2Cmd.Length == 0) )
+            {
+                throw new ArgumentException( "Can't run multiple games simultaneously over standard input." );
+            }
+
+            if ( endless )
+            {
+                while ( true )
+                {
+                    await RunGameAsync( player1Cmd, player2Cmd, new GameConfig(
+                        gameSeed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
+                        player1Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
+                        player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) ), humanPlayer );
+                }
+
+                return;
+            }
 
             var configs = Enumerable.Range( 0, gameCount )
                 .Select( i => new GameConfig(
                     gameSeed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
                     player1Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
                     player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) ) )
-            .ToArray();
-
-            if ( maxParallelCount > 1 && (player1Cmd.Length == 0 || player2Cmd.Length == 0) )
-            {
-                throw new ArgumentException( "Can't run multiple games simultaneously over standard input." );
-            }
+                .ToArray();
 
             var task = maxParallelCount > 1
                 ? RunGamesParallelAsync( player1Cmd, player2Cmd, configs, maxParallelCount )
