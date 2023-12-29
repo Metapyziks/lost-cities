@@ -100,12 +100,17 @@ public class Program
 
             if ( endless )
             {
+                gameCount = 0;
+
                 while ( true )
                 {
-                    await RunGameAsync( player1Cmd, player2Cmd, new GameConfig(
+                    Console.WriteLine( $"Game: {++gameCount}" );
+                    var config = new GameConfig(
                         gameSeed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
                         player1Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
-                        player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) ), humanPlayer );
+                        player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) );
+                    var result = await RunGameAsync( player1Cmd, player2Cmd, config, humanPlayer );
+                    Console.WriteLine( $"End: {GameSummary.FromResult( config, result ).ToJson()}" );
                 }
 
                 return;
