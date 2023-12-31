@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Lost Cities - Viewer</title>
+        <link rel="stylesheet" href="./css/lostcities.css"/>
+        <link rel="stylesheet" href="./css/index.css"/>
+        <script type="module">
+            import Viewer from "./js/lostcitiesviewer.js";
+
+            const viewer = new Viewer();
+
+            document
+                .getElementById("container")
+                .appendChild(viewer.element);
+        </script>
+    </head>
+    <body>
+        <div id="container">
+
+        </div>
+    </body>
+</html>
