@@ -1,9 +1,0 @@
-{
-  "profiles": {
-    "LostCities.Game": {
-      "commandName": "Project",
-      "commandLineArgs": "--player2 Greedy.exe\r\n--human",
-      "workingDirectory": "..\\Examples\\bin\\Debug\\net7.0\\"
-    }
-  }
-}

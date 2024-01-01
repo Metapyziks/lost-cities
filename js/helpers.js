@@ -1,4 +1,4 @@
-export function rotate(x: number, y: number, angle: number): [x: number, y: number] {
+export function rotate(x, y, angle) {
     const rads = angle * Math.PI / 180;
     const cos = Math.cos(rads);
     const sin = Math.sin(rads);
