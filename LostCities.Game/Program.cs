@@ -164,7 +164,7 @@ public class Program
 
                 foreach ( var summary in resultData.Summaries )
                 {
-                    if ( !false )
+                    if ( !first )
                     {
                         var key = Console.ReadKey( true );
 
