@@ -1,5 +1,4 @@
-export enum CardColor
-{
+export enum CardColor {
     RED = 1,
     GREEN,
     BLUE,
@@ -8,8 +7,7 @@ export enum CardColor
     PURPLE
 }
 
-export enum CardValue
-{
+export enum CardValue {
     WAGER = 0,
     TWO = 2,
     THREE,
@@ -20,6 +18,12 @@ export enum CardValue
     EIGHT,
     NINE,
     TEN
+}
+
+export enum Player {
+    NONE,
+    PLAYER1,
+    PLAYER2
 }
 
 export const CARD_SYMBOLS = new Map([

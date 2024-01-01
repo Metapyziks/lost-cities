@@ -1,16 +1,14 @@
 import CardCollection from "./cardcollection.js";
 
-export default class Hand extends CardCollection {
+export default class Expedition extends CardCollection {
     constructor(offsetX: number, offsetY: number, angle: number) {
         super({
             offsetX: offsetX,
             offsetY: offsetY,
-            offsetZ: 20,
             angle: angle,
-            sort: true,
+            sort: false,
 
-            radius: 96,
-            angleIncrement: 3
+            yIncrement: 1.5
         });
     }
 }

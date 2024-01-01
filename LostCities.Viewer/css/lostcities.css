@@ -2,27 +2,22 @@
     position: relative;
 
     background-color: #DED7C8;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+    width: 80em;
+    height: 60em;
 
     font-family: sans-serif;
+    overflow: hidden;
 
-    .hand {
+    .deck-count {
         position: absolute;
-        width: 0;
-        height: 10em;
-        left: 50%;
-        right: 50%;
-    }
-
-    .player1 {
-        bottom: 0;
-    }
-
-    .player2 {
-        top: 0;
-        transform: rotate(180deg);
+        font-size: 2.5em;
+        width: 4em;
+        height: 2em;
+        line-height: 2em;
+        left: 2em;
+        top: 11em;
+        text-align: center;
+        z-index: 1;
     }
 
     .card {
@@ -36,7 +31,7 @@
         border: 1px solid rgba(0,0,0,0.25);
         box-shadow: rgba(0, 0, 0, 0.25) 0 0 16px;
 
-        transition: all 0.25s ease-in-out;
+        transition: transform 0.25s ease-in-out;
 
         .label {
             position: absolute;
@@ -44,7 +39,7 @@
             border-radius: 0.125em;
             border: 1px solid rgba(0,0,0,0.25);
             background-color: rgba(255,255,255,0.25);
-            font-size: 3em;
+            font-size: 1.5em;
             top: 0.25em;
             left: 0.25em;
             right: 0.25em;
@@ -54,11 +49,27 @@
         .symbol {
             position: absolute;
             font-size: 3em;
-            bottom: 0.25em;
+            top: 1em;
             left: 0.25em;
             right: 0.25em;
             text-align: center;
         }
+    }
+
+    .card.face-down {
+        background-color: grey !important;
+        
+        .label {
+            display: none;
+        }
+
+        .symbol {
+            display: none;
+        }
+    }
+
+    .card.hidden {
+        display: none;
     }
     
     .card.red {

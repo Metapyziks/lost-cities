@@ -9,6 +9,25 @@ export default class Card {
         return a.value - b.value;
     }
 
+    get hidden(): boolean {
+        return this.element.style.display === "none";
+    }
+
+    set hidden(value: boolean) {
+        this.element.style.display = value ? "none" : "block";
+    }
+
+    get faceDown(): boolean {
+        return this.element.classList.contains("face-down");
+    }
+
+    set faceDown(value: boolean) {
+        this.element.classList.toggle("face-down", value);
+    }
+
+    static readonly WIDTH = 5.8;
+    static readonly HEIGHT = 8.8;
+
     readonly element: HTMLDivElement;
     readonly label: HTMLSpanElement;
     readonly symbol: HTMLSpanElement;
@@ -39,5 +58,9 @@ export default class Card {
         }
 
         this.symbol.innerText = CARD_SYMBOLS.get(color);
+    }
+
+    setTransform(x: number, y: number, angle: number): void {
+        this.element.style.transform = `translate(${x - Card.WIDTH * 0.5}em, ${y - Card.HEIGHT * 0.5}em) rotate(${angle}deg)`;
     }
 }
