@@ -16,6 +16,7 @@ export interface ICardCollectionOptions {
 
 export default abstract class CardCollection {
     private readonly _cards: Card[] = [];
+    private readonly _sortedCards: Card[] = [];
     
     private readonly _options: ICardCollectionOptions;
 
@@ -23,11 +24,24 @@ export default abstract class CardCollection {
         this._options = options;
     }
 
+    get count(): number {
+        return this._cards.length;
+    }
+
+    get last(): Card | undefined {
+        return this._cards.length === 0 ? undefined : this._cards[this._cards.length - 1];
+    }
+
+    get(index: number): Card {
+        return this._cards[index];
+    }
+
     add(card: Card): void {
         this._cards.push(card);
+        this._sortedCards.push(card);
 
         if (this._options.sort) {
-            this._cards.sort(Card.comparer);
+            this._sortedCards.sort(Card.comparer);
         }
 
         this._updateCardPositions();
@@ -44,6 +58,7 @@ export default abstract class CardCollection {
         }
 
         this._cards.splice(this._cards.indexOf(card), 1);
+        this._sortedCards.splice(this._sortedCards.indexOf(card), 1);
         this._updateCardPositions();
         
         return card;
@@ -51,6 +66,7 @@ export default abstract class CardCollection {
 
     clear(): void {
         this._cards.length = 0;
+        this._sortedCards.length = 0;
     }
 
     private _updateCardPositions(): void {
@@ -63,12 +79,12 @@ export default abstract class CardCollection {
         const xAdd = cos0 * (this._options.xIncrement ?? 0) - sin0 * (this._options.yIncrement ?? 0);
         const yAdd = sin0 * (this._options.xIncrement ?? 0) + cos0 * (this._options.yIncrement ?? 0);
         
-        for (let i = 0; i < this._cards.length; ++i) {
-            const card = this._cards[i];
+        for (let i = 0; i < this._sortedCards.length; ++i) {
+            const card = this._sortedCards[i];
 
             card.element.style.zIndex = ((this._options.offsetZ ?? 0) + i).toString();
 
-            const relIndex = i - (this._cards.length - 1) * 0.5;
+            const relIndex = i - (this._sortedCards.length - 1) * 0.5;
             const angle = this._options.angle + relIndex * angleIncrement;
             const angleRad = angle * Math.PI / 180;
 

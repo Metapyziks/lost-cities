@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
-using System.Security.Cryptography;
 
 namespace LostCities;
 
@@ -40,13 +39,14 @@ public record GameResult( GameState InitialState, GameState FinalState, IReadOnl
 }
 
 public record GameSummary( GameConfig Config, Player FirstTurn, Player Winner, Player Disqualified, int? Player1Score,
-    int? Player2Score )
+    int? Player2Score, string Replay )
 {
     public static GameSummary FromResult( GameConfig config, GameResult result )
     {
         return new GameSummary( config, result.InitialState.CurrentPlayer, result.Winner, result.Disqualified,
             result.Disqualified == Player.None ? result.FinalState.Player1.Score : null,
-            result.Disqualified == Player.None ? result.FinalState.Player2.Score : null );
+            result.Disqualified == Player.None ? result.FinalState.Player2.Score : null,
+            GameString.Encode( result ) );
     }
 
     public static GameSummary FromJson( string value )

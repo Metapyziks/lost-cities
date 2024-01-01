@@ -12,6 +12,16 @@
             document
                 .getElementById("container")
                 .appendChild(viewer.element);
+
+            document.addEventListener("keypress", ev => {
+                if (ev.code === "Space") {
+                    viewer.nextAction();
+                }
+            });
+
+            if (location.hash != null && location.hash.length > 1) {
+                viewer.loadFromReplayString(location.hash.substring(1));
+            }
         </script>
     </head>
     <body>

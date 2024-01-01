@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace LostCities;
 
@@ -78,6 +80,20 @@ public static class Helpers
         return copy;
     }
 
+    public static int IndexOf<T>( this IReadOnlyList<T> list, T item )
+        where T : IEquatable<T>
+    {
+        for ( var i = 0; i < list.Count; ++i )
+        {
+            if ( list[i].Equals( item ) )
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     public static string ToAbbreviation( this Color color )
     {
         switch ( color )
@@ -117,6 +133,37 @@ public static class Helpers
                 return ConsoleColor.Magenta;
             default:
                 throw new NotImplementedException();
+        }
+    }
+
+    public static void OpenUrl( string url )
+    {
+        // From https://stackoverflow.com/a/43232486
+
+        try
+        {
+            Process.Start( url );
+        }
+        catch
+        {
+            // hack because of this: https://github.com/dotnet/corefx/issues/10361
+            if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+            {
+                url = url.Replace( "&", "^&" );
+                Process.Start( new ProcessStartInfo( url ) { UseShellExecute = true } );
+            }
+            else if ( RuntimeInformation.IsOSPlatform( OSPlatform.Linux ) )
+            {
+                Process.Start( "xdg-open", url );
+            }
+            else if ( RuntimeInformation.IsOSPlatform( OSPlatform.OSX ) )
+            {
+                Process.Start( "open", url );
+            }
+            else
+            {
+                throw;
+            }
         }
     }
 }

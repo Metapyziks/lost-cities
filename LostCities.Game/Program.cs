@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
@@ -71,12 +72,17 @@ public class Program
             description: "If true, standard input / output players will have a human-readable interface.",
             getDefaultValue: () => false );
 
+        var watchOption = new Option<bool>(
+            name: "--watch",
+            description: "If true, after running the game(s) open a browser window to view a replay.",
+            getDefaultValue: () => false );
+
         var rootCommand = new RootCommand( "Run one or more games with the given pair of players." )
         {
             player1Option, player2Option, outputOption,
             gameSeedOption, player1SeedOption, player2SeedOption,
             gameCountOption, endlessOption, maxParallelCountOption,
-            fullResultsOption, humanPlayerOption
+            fullResultsOption, humanPlayerOption, watchOption
         };
 
         rootCommand.SetHandler( async ( context ) =>
@@ -92,6 +98,7 @@ public class Program
             var maxParallelCount = context.ParseResult.GetValueForOption( maxParallelCountOption );
             var fullResults = context.ParseResult.GetValueForOption( fullResultsOption );
             var humanPlayer = context.ParseResult.GetValueForOption( humanPlayerOption );
+            var watch = context.ParseResult.GetValueForOption( watchOption );
 
             if ( maxParallelCount > 1 && (player1Cmd.Length == 0 || player2Cmd.Length == 0) )
             {
@@ -144,10 +151,30 @@ public class Program
             PrintPlayerStats( results, Player.Player2 );
             Console.WriteLine();
 
+            var resultData = new GameResults( configs, results, fullResults );
+
             if ( outputFile != null )
             {
-                var resultData = new GameResults( configs, results, fullResults );
                 await File.WriteAllTextAsync( outputFile.FullName, resultData.ToJson() );
+            }
+
+            if ( watch )
+            {
+                foreach ( var summary in resultData.Summaries )
+                {
+                    Console.WriteLine($"Viewing replay for {summary.Config}...");
+                    Helpers.OpenUrl( $"https://metapyziks.github.io/lost-cities/#{resultData.Summaries[0].Replay}" );
+
+                    var key = Console.ReadKey( true );
+
+                    switch ( key.Key )
+                    {
+                        case ConsoleKey.Escape:
+                        case ConsoleKey.Q:
+                        case ConsoleKey.X:
+                            return;
+                    }
+                }
             }
         } );
 

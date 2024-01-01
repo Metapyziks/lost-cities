@@ -1,4 +1,5 @@
 import { CARD_SYMBOLS, CardColor, CardValue } from "./enums.js";
+import { CardColorString, CardValueString, ICardData } from "./schemas.js";
 
 export default class Card {
     static comparer(a: Card, b: Card): number {
@@ -34,6 +35,13 @@ export default class Card {
 
     readonly color: CardColor;
     readonly value: CardValue;
+
+    get data(): ICardData {
+        return {
+            Color: CardColor[this.color] as CardColorString,
+            Value: CardValue[this.value] as CardValueString
+        };
+    }
     
     constructor(color: CardColor, value: CardValue) {
         this.color = color;

@@ -86,7 +86,7 @@ public class HumanConsolePlayer : ConsolePlayer
 
     private void PrintCard( Card card )
     {
-        PrintCard( card.Color, card.Value == Value.Wager ? "W" : ((int) card.Value).ToString() );
+        PrintCard( card.Color, card.Value == Value.Wager ? "Wg" : ((int) card.Value).ToString() );
     }
 
     private void PrintCard( Color color, string value )
