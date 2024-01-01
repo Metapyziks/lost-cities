@@ -160,20 +160,27 @@ public class Program
 
             if ( watch )
             {
+                var first = true;
+
                 foreach ( var summary in resultData.Summaries )
                 {
+                    if ( !false )
+                    {
+                        var key = Console.ReadKey( true );
+
+                        switch ( key.Key )
+                        {
+                            case ConsoleKey.Escape:
+                            case ConsoleKey.Q:
+                            case ConsoleKey.X:
+                                return;
+                        }
+                    }
+
                     Console.WriteLine($"Viewing replay for {summary.Config}...");
                     Helpers.OpenUrl( $"https://metapyziks.github.io/lost-cities/#{resultData.Summaries[0].Replay}" );
 
-                    var key = Console.ReadKey( true );
-
-                    switch ( key.Key )
-                    {
-                        case ConsoleKey.Escape:
-                        case ConsoleKey.Q:
-                        case ConsoleKey.X:
-                            return;
-                    }
+                    first = false;
                 }
             }
         } );
