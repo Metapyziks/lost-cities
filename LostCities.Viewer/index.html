@@ -13,6 +13,12 @@
                 .getElementById("container")
                 .appendChild(viewer.element);
 
+            document.addEventListener("mousedown", ev => {
+                if (ev.button === 0) {
+                    viewer.nextAction();
+                }
+            });
+
             document.addEventListener("keypress", ev => {
                 if (ev.code === "Space") {
                     viewer.nextAction();

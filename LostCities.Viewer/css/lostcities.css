@@ -1,5 +1,6 @@
 .lost-cities-viewer {
     position: relative;
+    user-select: none;
 
     background-color: #DED7C8;
     width: 80em;
@@ -21,7 +22,6 @@
     }
 
     .card {
-        user-select: none;
         position: absolute;
         width: 5.8em;
         height: 8.8em;
