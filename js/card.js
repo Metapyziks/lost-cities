@@ -19,6 +19,12 @@ export default class Card {
     set faceDown(value) {
         this.element.classList.toggle("face-down", value);
     }
+    get data() {
+        return {
+            Color: CardColor[this.color],
+            Value: CardValue[this.value]
+        };
+    }
     constructor(color, value) {
         this.color = color;
         this.value = value;

@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import Card from "./card.js";
 import { Player } from "./enums.js";
 import Expedition from "./expedition.js";
+import { parseGameString } from "./gamestring.js";
 import PlayerArea from "./playerarea.js";
 import { parseCardColor, parseCardValue, parsePlayer } from "./schemas.js";
 export default class LostVitiesViewer {
@@ -26,34 +27,9 @@ export default class LostVitiesViewer {
         this._deckCountLabel = document.createElement("span");
         this._deckCountLabel.classList.add("deck-count");
         this.element.appendChild(this._deckCountLabel);
-        this.element.addEventListener("paste", ev => this._onPaste(ev));
-        document.addEventListener("keypress", ev => this._onKeyPress(ev));
         for (let i = 1; i <= 5; ++i) {
             const y = (i - 3) * 6;
             this._discard.set(i, new Expedition(72, 30 + y, 90));
-        }
-    }
-    _onPaste(ev) {
-        const text = ev.clipboardData.getData("text");
-        if (text == null) {
-            return;
-        }
-        let result;
-        const obj = JSON.parse(text);
-        if ("Results" in obj) {
-            result = obj.Results[0];
-        }
-        else if ("InitialState" in obj) {
-            result = obj;
-        }
-        else {
-            return;
-        }
-        this.loadFromResult(result);
-    }
-    _onKeyPress(ev) {
-        if (ev.code === "Space") {
-            this.nextAction();
         }
     }
     clear() {
@@ -87,6 +63,12 @@ export default class LostVitiesViewer {
                 pile.add(this._createCard(cardData));
             }
         }
+    }
+    loadFromReplayString(base64) {
+        const parsed = parseGameString(base64);
+        this.loadFromState(parsed.initialState);
+        this._actions.length = 0;
+        this._actions.push(...parsed.actions);
     }
     loadFromState(state) {
         this.clear();
@@ -134,6 +116,15 @@ export default class LostVitiesViewer {
                 actingPlayerArea = this._player2;
                 this._turn = Player.PLAYER1;
                 break;
+        }
+        if ("playedIndex" in action) {
+            action = {
+                PlayedCard: actingPlayerArea.hand.get(action.playedIndex).data,
+                Discarded: action.discarded,
+                DrawnCard: action.drawnColor === 0
+                    ? undefined
+                    : this._discard.get(action.drawnColor).last.data
+            };
         }
         if (actingPlayerArea != null) {
             const playedCard = actingPlayerArea.hand.remove(action.PlayedCard);
