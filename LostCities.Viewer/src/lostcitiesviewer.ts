@@ -18,7 +18,9 @@ export default class LostVitiesViewer {
     private readonly _deckCountLabel: HTMLSpanElement;
 
     private _turn: Player = Player.NONE;
-    private _actions: (IPlayerActionData | ICompressedPlayerActionData)[] = [];
+    private readonly _actions: (IPlayerActionData | ICompressedPlayerActionData)[] = [];
+    private _actionIndex = 0;
+    private readonly _undoStack: (() => void)[] = [];
 
     constructor() {
         this.element = document.createElement("div");
@@ -82,6 +84,9 @@ export default class LostVitiesViewer {
 
         this._actions.length = 0;
         this._actions.push(...parsed.actions);
+
+        this._actionIndex = 0;
+        this._undoStack.length = 0;
     }
 
     loadFromState(state: IGameStateData): void {
@@ -120,19 +125,36 @@ export default class LostVitiesViewer {
 
         this._actions.length = 0;
         this._actions.push(...result.Actions);
+        
+        this._actionIndex = 0;
+        this._undoStack.length = 0;
     }
 
-    nextAction(): void {
-        if (this._actions.length === 0) {
-            return;
+    nextAction(): boolean {
+        if (this._actionIndex >= this._actions.length) {
+            return false;
         }
 
-        const next = this._actions.shift();
+        const next = this._actions[this._actionIndex++];
         this.applyAction(next);
+
+        return true;
+    }
+
+    prevAction(): boolean {
+        if (this._undoStack.length === 0 || this._actionIndex <= 0) {
+            return false;
+        }
+
+        this._undoStack.pop()();
+        this._actionIndex--;
+
+        return true;
     }
 
     applyAction(action: IPlayerActionData | ICompressedPlayerActionData): void {
         let actingPlayerArea: PlayerArea;
+        const prevTurn = this._turn;
 
         switch (this._turn) {
             case Player.PLAYER1:
@@ -158,27 +180,57 @@ export default class LostVitiesViewer {
 
         if (actingPlayerArea != null) {
             const playedCard = actingPlayerArea.hand.remove(action.PlayedCard);
+            const playedTo = action.Discarded
+                ? this._discard.get(playedCard.color)
+                : actingPlayerArea.expeditions.get(playedCard.color);
 
-            if (action.Discarded) {
-                this._discard.get(playedCard.color).add(playedCard);
-            } else {
-                actingPlayerArea.expeditions.get(playedCard.color).add(playedCard);
-            }
+            const drawnFrom = action.DrawnCard != null
+                ? this._discard.get(parseCardColor(action.DrawnCard.Color))
+                : this._deck;
 
-            if (action.DrawnCard != null) {
-                actingPlayerArea.hand.add(this._discard.get(parseCardColor(action.DrawnCard.Color)).remove(action.DrawnCard));
+            playedTo.add(playedCard);
+
+            let drawnCard: Card;
+
+            if (drawnFrom instanceof CardCollection) {
+                drawnCard = drawnFrom.remove(action.DrawnCard);
             } else {
-                const drawnCard = this._deck.pop();
+                drawnCard = drawnFrom.pop();
                 drawnCard.faceDown = false;
 
-                actingPlayerArea.hand.add(drawnCard);
-
-                if (this._deck.length > 0) {
-                    this._deck[this._deck.length - 1].hidden = false;
+                if (drawnFrom.length > 0) {
+                    drawnFrom[drawnFrom.length - 1].hidden = false;
                 }
                 
                 this._updateDeckCount();
             }
+
+            actingPlayerArea.hand.add(drawnCard);
+            
+            this._undoStack.push(() => {
+                actingPlayerArea.hand.remove(drawnCard);
+
+                if (drawnFrom instanceof CardCollection) {
+                    drawnFrom.add(drawnCard);
+                } else {
+                    if (drawnFrom.length > 1) {
+                        drawnFrom[drawnFrom.length - 2].hidden = true;
+                    }
+                    
+                    drawnCard.faceDown = true;
+
+                    drawnFrom.push(drawnCard);
+                    drawnCard.setTransform(10, 30, -90);
+                    drawnCard.element.style.zIndex = "0";
+                    
+                    this._updateDeckCount();
+                }
+
+                playedTo.remove(playedCard);
+                actingPlayerArea.hand.add(playedCard);
+
+                this._turn = prevTurn;
+            });
         }
 
         if (this._deck.length === 0) {

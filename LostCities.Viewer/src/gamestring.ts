@@ -80,8 +80,6 @@ export function parseGameString(base64: string): IParsedGameString {
             discarded: (encoded & 0x8) === 0x8,
             drawnColor: encoded >> 4
         });
-
-        console.log(actions[actions.length - 1]);
     }
 
     result.actions = actions;

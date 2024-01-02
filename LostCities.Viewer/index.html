@@ -19,9 +19,17 @@
                 }
             });
 
-            document.addEventListener("keypress", ev => {
-                if (ev.code === "Space") {
-                    viewer.nextAction();
+            document.addEventListener("keydown", ev => {
+                switch (ev.code) {
+                    case "Space":
+                    case "ArrowRight":
+                        while (viewer.nextAction() && ev.getModifierState("Shift"));
+                        break;
+
+                    case "Backspace":
+                    case "ArrowLeft":
+                        while (viewer.prevAction() && ev.getModifierState("Shift"));
+                        break;
                 }
             });
 
