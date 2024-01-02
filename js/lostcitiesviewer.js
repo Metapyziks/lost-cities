@@ -144,6 +144,7 @@ export default class LostVitiesViewer {
             };
         }
         if (actingPlayerArea != null) {
+            const handIndex = actingPlayerArea.hand.indexOf(action.PlayedCard);
             const playedCard = actingPlayerArea.hand.remove(action.PlayedCard);
             const playedTo = action.Discarded
                 ? this._discard.get(playedCard.color)
@@ -181,7 +182,7 @@ export default class LostVitiesViewer {
                     this._updateDeckCount();
                 }
                 playedTo.remove(playedCard);
-                actingPlayerArea.hand.add(playedCard);
+                actingPlayerArea.hand.insert(handIndex, playedCard);
                 this._turn = prevTurn;
             });
         }

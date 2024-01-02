@@ -23,6 +23,14 @@ export default class CardCollection {
         }
         this._updateCardPositions();
     }
+    insert(index, card) {
+        this._cards.splice(index, 0, card);
+        this._sortedCards.splice(index, 0, card);
+        if (this._options.sort) {
+            this._sortedCards.sort(Card.comparer);
+        }
+        this._updateCardPositions();
+    }
     remove(card) {
         if (!(card instanceof Card)) {
             const color = parseCardColor(card.Color);
@@ -37,6 +45,14 @@ export default class CardCollection {
     clear() {
         this._cards.length = 0;
         this._sortedCards.length = 0;
+    }
+    indexOf(card) {
+        if (!(card instanceof Card)) {
+            const color = parseCardColor(card.Color);
+            const value = parseCardValue(card.Value);
+            card = this._cards.find(x => x.color === color && x.value === value);
+        }
+        return this._cards.indexOf(card);
     }
     _updateCardPositions() {
         var _a, _b, _c, _d, _e, _f, _g;
