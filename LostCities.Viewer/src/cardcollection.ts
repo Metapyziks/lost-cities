@@ -47,6 +47,17 @@ export default abstract class CardCollection {
         this._updateCardPositions();
     }
 
+    insert(index: number, card: Card): void {
+        this._cards.splice(index, 0, card);
+        this._sortedCards.splice(index, 0, card);
+        
+        if (this._options.sort) {
+            this._sortedCards.sort(Card.comparer);
+        }
+        
+        this._updateCardPositions();
+    }
+
     remove(card: Card): Card;
     remove(card: ICardData): Card;
     remove(card: Card | ICardData): Card {
@@ -67,6 +78,19 @@ export default abstract class CardCollection {
     clear(): void {
         this._cards.length = 0;
         this._sortedCards.length = 0;
+    }
+
+    indexOf(card: Card): number;
+    indexOf(card: ICardData): number;
+    indexOf(card: Card | ICardData): number {
+        if (!(card instanceof Card)) {
+            const color = parseCardColor(card.Color);
+            const value = parseCardValue(card.Value);
+    
+            card = this._cards.find(x => x.color === color && x.value === value);
+        }
+
+        return this._cards.indexOf(card);
     }
 
     private _updateCardPositions(): void {
