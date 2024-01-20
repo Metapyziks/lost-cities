@@ -32,9 +32,9 @@ public class Program
             description: "File path to write game results.",
             getDefaultValue: () => null );
 
-        var gameSeedOption = new Option<int?>(
+        var gameSeedOption = new Option<string?>(
             name: "--game-seed",
-            description: "Seed to use when shuffling the deck. Random by default.",
+            description: "256-bit seed to use when shuffling the deck. Random by default.",
             getDefaultValue: () => null );
 
         var player1SeedOption = new Option<int?>(
@@ -45,6 +45,11 @@ public class Program
         var player2SeedOption = new Option<int?>(
             name: "--player2-seed",
             description: "Seed to pass to player 2. Random by default.",
+            getDefaultValue: () => null );
+
+        var startPlayerOption = new Option<int?>(
+            name: "--start-player",
+            description: "Which player acts first (1 or 2). Random by default.",
             getDefaultValue: () => null );
 
         var gameCountOption = new Option<int>(
@@ -72,6 +77,11 @@ public class Program
             description: "If true, standard input / output players will have a human-readable interface.",
             getDefaultValue: () => false );
 
+        var replayOption = new Option<string?>(
+            name: "--replay",
+            description: "Replay string to run again, automating the turns of players that aren't specified.",
+            getDefaultValue: () => null );
+
         var watchOption = new Option<bool>(
             name: "--watch",
             description: "If true, after running the game(s) open a browser window to view a replay.",
@@ -80,9 +90,9 @@ public class Program
         var rootCommand = new RootCommand( "Run one or more games with the given pair of players." )
         {
             player1Option, player2Option, outputOption,
-            gameSeedOption, player1SeedOption, player2SeedOption,
+            gameSeedOption, player1SeedOption, player2SeedOption, startPlayerOption,
             gameCountOption, endlessOption, maxParallelCountOption,
-            fullResultsOption, humanPlayerOption, watchOption
+            fullResultsOption, humanPlayerOption, replayOption, watchOption
         };
 
         rootCommand.SetHandler( async ( context ) =>
@@ -93,16 +103,52 @@ public class Program
             var gameSeed = context.ParseResult.GetValueForOption( gameSeedOption );
             var player1Seed = context.ParseResult.GetValueForOption( player1SeedOption );
             var player2Seed = context.ParseResult.GetValueForOption( player2SeedOption );
+            var startPlayer = context.ParseResult.GetValueForOption( startPlayerOption );
             var gameCount = context.ParseResult.GetValueForOption( gameCountOption );
             var endless = context.ParseResult.GetValueForOption( endlessOption );
             var maxParallelCount = context.ParseResult.GetValueForOption( maxParallelCountOption );
             var fullResults = context.ParseResult.GetValueForOption( fullResultsOption );
             var humanPlayer = context.ParseResult.GetValueForOption( humanPlayerOption );
+            var replay = context.ParseResult.GetValueForOption( replayOption );
             var watch = context.ParseResult.GetValueForOption( watchOption );
 
             if ( maxParallelCount > 1 && (player1Cmd.Length == 0 || player2Cmd.Length == 0) )
             {
                 throw new ArgumentException( "Can't run multiple games simultaneously over standard input." );
+            }
+
+            if ( !string.IsNullOrEmpty( replay ) )
+            {
+                if ( gameSeed is not null )
+                {
+                    throw new ArgumentException( "Can't specify both --game-seed and --replay." );
+                }
+
+                if ( player1Cmd.Length > 0 && player1Seed is null || player2Cmd.Length > 0 && player2Seed is null )
+                {
+                    throw new ArgumentException( "When using the --replay option, must give a seed for each specified player." );
+                }
+
+                var result = GameString.Decode( replay )!;
+
+                result = result with
+                {
+                    InitialState = result.InitialState with
+                    {
+                        Player1 = result.InitialState.Player1 with { Seed = player1Seed ?? 0 },
+                        Player2 = result.InitialState.Player2 with { Seed = player2Seed ?? 0 },
+                    }
+                };
+
+                var player1 = player1Cmd.Length == 0
+                    ? new ReplayPlayer( result, Player.Player1 )
+                    : CreatePlayer( player1Cmd, Player.Player1, humanPlayer );
+                var player2 = player2Cmd.Length == 0
+                    ? new ReplayPlayer( result, Player.Player2 )
+                    : CreatePlayer( player2Cmd, Player.Player2, humanPlayer );
+
+                await LostCities.ContinueGameAsync( result.InitialState, player1, player2 );
+                return;
             }
 
             if ( endless )
@@ -113,9 +159,10 @@ public class Program
                 {
                     Console.WriteLine( $"Game: {++gameCount}" );
                     var config = new GameConfig(
-                        gameSeed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
+                        gameSeed != null ? GameSeed.Parse( gameSeed ) : GameSeed.Generate(),
                         player1Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
-                        player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) );
+                        player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
+                        (Player)(startPlayer ?? RandomNumberGenerator.GetInt32( 1, 3 )) );
                     var result = await RunGameAsync( player1Cmd, player2Cmd, config, humanPlayer );
                     Console.WriteLine( $"End: {GameSummary.FromResult( config, result ).ToJson()}" );
                 }
@@ -125,9 +172,10 @@ public class Program
 
             var configs = Enumerable.Range( 0, gameCount )
                 .Select( i => new GameConfig(
-                    gameSeed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
+                    gameSeed != null ? GameSeed.Parse( gameSeed ) : GameSeed.Generate(),
                     player1Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
-                    player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ) ) )
+                    player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
+                    (Player)(startPlayer ?? RandomNumberGenerator.GetInt32( 1, 3 )) ) )
                 .ToArray();
 
             var task = maxParallelCount > 1
@@ -257,7 +305,7 @@ public class Program
     {
         return cmd.Length == 0
             ? human ? new HumanConsolePlayer( player ) : new ConsolePlayer( player )
-            : new ChildProcessPlayer( cmd[0], cmd.Skip( 1 ).ToArray() );
+            : new ChildProcessPlayer( player, cmd[0], cmd.Skip( 1 ).ToArray() );
     }
 
     private static async Task<GameResult> RunGameAsync( string[] player1Cmd, string[] player2Cmd, GameConfig config, bool human )

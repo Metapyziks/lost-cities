@@ -11,9 +11,9 @@ public record GameState(
     IReadOnlyDictionary<Color, IReadOnlyList<Card>> Discarded,
     PlayerAction? LastAction = null )
 {
-    public static GameState New( int deckSeed, int player1Seed, int player2Seed, bool sixthColor = false )
+    public static GameState New( GameSeed deckSeed, int player1Seed, int player2Seed, Player startPlayer, bool sixthColor = false )
     {
-        var random = new Random( deckSeed );
+        var random = new DeckGenerator( deckSeed );
         var deck = new List<Card>();
 
         var colors = sixthColor
@@ -47,7 +47,7 @@ public record GameState(
 
         deck.RemoveRange( 0, 16 );
 
-        return new GameState( random.NextDouble() < 0.5 ? Player.Player1 : Player.Player2,
+        return new GameState( startPlayer,
             player1, player2, deck,
             colors.ToImmutableDictionary(
                 x => x,

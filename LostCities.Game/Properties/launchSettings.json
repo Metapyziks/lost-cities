@@ -2,8 +2,8 @@
   "profiles": {
     "LostCities.Game": {
       "commandName": "Project",
-      "commandLineArgs": "--player2 Greedy.exe\r\n--human",
-      "workingDirectory": "..\\Examples\\bin\\Debug\\net7.0\\"
+      "commandLineArgs": "--replay AwUCAAIsRihQEyZEUxZUWSAwR0lSJCBAWEo6NDAXNjJFNyBCVxAlM0g5JxoQIjU4KUAAAAgZGEASKlBVMAAIEBUUVkNQI1pFAAAAAwkWAgABAQ8ALAQ5JA0WBQcEAgwGDgQMRAwAEgUyBT4KCgdNCF8MSgoACBxHPQcOCRoLTwsnCxoJTg1fDh8NLgsrDVkO\r\n--player1 Random.exe\r\n--player1-seed 1200434817",
+      "workingDirectory": "..\\Examples\\bin\\Release\\net7.0\\"
     }
   }
 }

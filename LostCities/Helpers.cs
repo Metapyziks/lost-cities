@@ -61,10 +61,11 @@ public static class Helpers
     {
         return new List<T>( list ) { item };
     }
-
-    public static void ShuffleInPlace<T>( this IList<T> list, Random random )
+    public static void ShuffleInPlace<T>( this IList<T> list, Random random, int? upTo = null )
     {
-        for ( var i = 0; i < list.Count - 1; ++i )
+        var max = upTo ?? list.Count - 1;
+
+        for ( var i = 0; i < max; ++i )
         {
             var j = random.Next( i, list.Count );
             (list[i], list[j]) = (list[j], list[i]);
@@ -72,6 +73,26 @@ public static class Helpers
     }
 
     public static IReadOnlyList<T> Shuffle<T>( this IEnumerable<T> list, Random random )
+    {
+        var copy = list.ToArray();
+
+        ShuffleInPlace( copy, random );
+
+        return copy;
+    }
+
+    public static void ShuffleInPlace<T>( this IList<T> list, DeckGenerator random, int? upTo = null )
+    {
+        var max = upTo ?? list.Count - 1;
+
+        for ( var i = 0; i < max; ++i )
+        {
+            var j = random.Next( i, list.Count );
+            (list[i], list[j]) = (list[j], list[i]);
+        }
+    }
+
+    public static IReadOnlyList<T> Shuffle<T>( this IEnumerable<T> list, DeckGenerator random )
     {
         var copy = list.ToArray();
 
@@ -134,6 +155,21 @@ public static class Helpers
             default:
                 throw new NotImplementedException();
         }
+    }
+
+    public static IReadOnlyDictionary<Color, IReadOnlyList<Card>> DivideByColor( this IEnumerable<Card> cards, int colorCount )
+    {
+        var dict = Enumerable.Range( 1, colorCount )
+            .ToDictionary( x => (Color)x, x => new List<Card>() );
+
+        foreach ( var card in cards )
+        {
+            dict[card.Color].Add( card );
+        }
+
+        return dict.ToImmutableDictionary(
+            x => x.Key,
+            x => (IReadOnlyList<Card>)x.Value );
     }
 
     public static void OpenUrl( string url )

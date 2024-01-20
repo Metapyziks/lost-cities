@@ -393,7 +393,7 @@ public class ChildProcessPlayer : IPlayer
 {
     public Process Process { get; }
 
-    public ChildProcessPlayer( string fileName, params string[] args )
+    public ChildProcessPlayer( Player player, string fileName, params string[] args )
     {
         var startInfo = new ProcessStartInfo
         {
@@ -410,6 +410,14 @@ public class ChildProcessPlayer : IPlayer
         }
 
         Process = Process.Start( startInfo )!;
+
+        Task.Run( async () =>
+        {
+            while ( await Process.StandardError.ReadLineAsync() is { } line )
+            {
+                Console.Error.WriteLine( $"{player}: {line}" );
+            }
+        } );
     }
 
     public async Task<PlayerAction?> TakeTurnAsync( PlayerView view )

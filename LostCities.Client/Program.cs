@@ -31,6 +31,9 @@ var maxParallelGamesOption = new Option<int>(
     name: "--max-parallel",
     description: "Maximum number of games to play in parallel.",
     getDefaultValue: () => 16 );
+var outputOption = new Option<FileInfo>(
+    name: "--output",
+    description: "File to write game results to." );
 
 var rootCommand = new RootCommand( "Connect to the game server and start playing matches." )
 {
@@ -39,7 +42,8 @@ var rootCommand = new RootCommand( "Connect to the game server and start playing
     playerTokenOption,
     versionOption,
     playerOption,
-    maxParallelGamesOption
+    maxParallelGamesOption,
+    outputOption
 };
 
 var jsonOptions = new JsonSerializerOptions
@@ -50,7 +54,7 @@ var jsonOptions = new JsonSerializerOptions
     }
 };
 
-rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, maxParallelGames) =>
+rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, maxParallelGames, output ) =>
 {
     var client = new TcpClient();
 
@@ -164,7 +168,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     else
                     {
                         runningGames[newGameMessage.Id] =
-                            new RunningGame( new ChildProcessPlayer( playerCmd[0], playerCmd.Skip( 1 ).ToArray() ),
+                            new RunningGame( new ChildProcessPlayer( Player.None, playerCmd[0], playerCmd.Skip( 1 ).ToArray() ),
                                 TimeSpan.FromSeconds( newGameMessage.MaxTurnTime ?? 60d ) );
                         sendQueue.Enqueue( new AcceptGameMessage( newGameMessage.Id, true ) );
                     }
@@ -195,7 +199,10 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     runningGames.Remove( endGameMessage.Id );
                     player.Dispose();
 
-                    Console.WriteLine( endGameMessage.ResultJson );
+                    if ( output != null )
+                    {
+                        await File.AppendAllTextAsync( output.FullName, $"{{ \"Player\": {endGameMessage.Player}, \"Result\": {endGameMessage.ResultJson} }}{Environment.NewLine}" );
+                    }
 
                     var result = GameSummary.FromJson( endGameMessage.ResultJson );
 
@@ -231,6 +238,6 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
         }
     }
 
-}, hostNameOption, portOption, playerTokenOption, versionOption, playerOption, maxParallelGamesOption );
+}, hostNameOption, portOption, playerTokenOption, versionOption, playerOption, maxParallelGamesOption, outputOption );
 
 await rootCommand.Parse( args  ).InvokeAsync();
