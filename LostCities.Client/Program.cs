@@ -168,7 +168,7 @@ rootCommand.SetHandler( async (hostName, port, playerToken, version, playerCmd, 
                     else
                     {
                         runningGames[newGameMessage.Id] =
-                            new RunningGame( new ChildProcessPlayer( Player.None, playerCmd[0], playerCmd.Skip( 1 ).ToArray() ),
+                            new RunningGame( ChildProcessPlayer.Create( Player.None, playerCmd[0], playerCmd.Skip( 1 ).ToArray() ),
                                 TimeSpan.FromSeconds( newGameMessage.MaxTurnTime ?? 60d ) );
                         sendQueue.Enqueue( new AcceptGameMessage( newGameMessage.Id, true ) );
                     }

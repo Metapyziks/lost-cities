@@ -1,5 +1,6 @@
 ﻿
 using System.Diagnostics;
+using System.Reflection;
 
 namespace LostCities;
 
@@ -393,7 +394,30 @@ public class ChildProcessPlayer : IPlayer
 {
     public Process Process { get; }
 
-    public ChildProcessPlayer( Player player, string fileName, params string[] args )
+    public static IPlayer Create( Player player, string fileName, params string[] args )
+    {
+        try
+        {
+            var asm = Assembly.LoadFrom( fileName );
+            var botType = asm.ExportedTypes
+                .First( x => !x.IsAbstract && x.IsAssignableTo( typeof(IPlayer) ) );
+
+            if ( botType.GetConstructor( new[] { typeof(string[]) } ) is { } ctor )
+            {
+                return (IPlayer)ctor.Invoke( new object[] { args } );
+            }
+
+            return (IPlayer)Activator.CreateInstance( botType )!;
+        }
+        catch
+        {
+            //
+        }
+
+        return new ChildProcessPlayer( player, fileName, args );
+    }
+
+    private ChildProcessPlayer( Player player, string fileName, params string[] args )
     {
         var startInfo = new ProcessStartInfo
         {

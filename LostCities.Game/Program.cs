@@ -305,7 +305,7 @@ public class Program
     {
         return cmd.Length == 0
             ? human ? new HumanConsolePlayer( player ) : new ConsolePlayer( player )
-            : new ChildProcessPlayer( player, cmd[0], cmd.Skip( 1 ).ToArray() );
+            : ChildProcessPlayer.Create( player, cmd[0], cmd.Skip( 1 ).ToArray() );
     }
 
     private static async Task<GameResult> RunGameAsync( string[] player1Cmd, string[] player2Cmd, GameConfig config, bool human )
