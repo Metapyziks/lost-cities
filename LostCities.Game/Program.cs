@@ -170,12 +170,14 @@ public class Program
                 return;
             }
 
+            var startPlayerOffset = RandomNumberGenerator.GetInt32( 0, 2 );
+
             var configs = Enumerable.Range( 0, gameCount )
                 .Select( i => new GameConfig(
                     gameSeed != null ? GameSeed.Parse( gameSeed ) : GameSeed.Generate(),
                     player1Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
                     player2Seed ?? RandomNumberGenerator.GetInt32( int.MinValue, int.MaxValue ),
-                    (Player)(startPlayer ?? RandomNumberGenerator.GetInt32( 1, 3 )) ) )
+                    (Player)(startPlayer ?? 1 + ((i + startPlayerOffset) & 1)) ) )
                 .ToArray();
 
             var task = maxParallelCount > 1
