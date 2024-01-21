@@ -1,11 +1,10 @@
-﻿using LostCities;
+﻿
+namespace LostCities.Random;
 
-Random? random = null;
-
-while ( PlayerView.ReadFromConsole() is {} view )
+public class Program
 {
-    random ??= new Random( view.Seed );
-
-    var actions = view.ValidActions.ToArray();
-    actions[random.Next( actions.Length )].WriteToConsole();
+    public static async Task Main()
+    {
+        await new RandomBot().RunAsync();
+    }
 }

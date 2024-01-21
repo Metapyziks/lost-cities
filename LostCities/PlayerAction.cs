@@ -20,9 +20,10 @@ public record PlayerAction( Card PlayedCard, bool Discarded, Card? DrawnCard )
         return JsonSerializer.Serialize( this, Helpers.JsonOptions );
     }
 
-    public void WriteToConsole()
+    public void Write( TextWriter writer )
     {
-        Console.WriteLine( ToJson() );
+        writer.WriteLine( ToJson() );
+        writer.Flush();
     }
 
     /// <inheritdoc/>

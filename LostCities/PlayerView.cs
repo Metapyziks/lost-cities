@@ -24,9 +24,9 @@ public record PlayerView( int Seed, int DeckCount,
     IReadOnlyDictionary<Color, IReadOnlyList<Card>> Discarded,
     PlayerAction? LastAction )
 {
-    public static PlayerView? ReadFromConsole()
+    public static PlayerView? Read( TextReader reader )
     {
-        var line = Console.ReadLine();
+        var line = reader.ReadLine();
 
         if ( string.IsNullOrWhiteSpace( line ) )
         {
