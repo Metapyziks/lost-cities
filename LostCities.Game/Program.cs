@@ -282,13 +282,13 @@ public class Program
         while ( !task.IsCompleted )
         {
             Console.SetCursorPosition( 0, top );
-            Console.WriteLine( $"Completed {results.Count} of {configs.Count} games..." );
+            Console.WriteLine( $"Completed {results.Count:N0} of {configs.Count:N0} games..." );
 
             await Task.Delay( 1 );
         }
 
         Console.SetCursorPosition( 0, top );
-        Console.WriteLine( $"Completed {results.Count} of {configs.Count} games   " );
+        Console.WriteLine( $"Completed {results.Count:N0} of {configs.Count:N0} games   " );
         Console.WriteLine();
 
         Console.CursorVisible = true;

@@ -1,5 +1,7 @@
 ﻿
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace LostCities;
@@ -13,27 +15,55 @@ public class ChildProcessPlayer : IPlayer
 {
     public Process Process { get; }
 
+    private static ConcurrentDictionary<string, Func<string[], IPlayer>?> BotCtorCache { get; } = new ();
+
+    private static Func<string[], IPlayer> GetBotCtorUncached( string fileName )
+    {
+        var asm = Assembly.LoadFrom( fileName );
+        var botType = asm.ExportedTypes
+            .First( x => !x.IsAbstract && x.IsAssignableTo( typeof( IPlayer ) ) );
+
+        var argsParam = Expression.Parameter( typeof(string[]), "args" );
+
+        Expression ctorCall;
+
+        if ( botType.GetConstructor( new[] { typeof( string[] ) } ) is { } ctor )
+        {
+            ctorCall = Expression.New( ctor, argsParam );
+        }
+        else
+        {
+            ctorCall = Expression.New( botType );
+        }
+
+        return Expression.Lambda<Func<string[], IPlayer>>( ctorCall, argsParam ).Compile();
+    }
+
     public static IPlayer Create( Player player, string fileName, params string[] args )
     {
-        try
+        if ( !BotCtorCache.TryGetValue( fileName, out var ctor ) )
         {
-            var asm = Assembly.LoadFrom( fileName );
-            var botType = asm.ExportedTypes
-                .First( x => !x.IsAbstract && x.IsAssignableTo( typeof(IPlayer) ) );
-
-            if ( botType.GetConstructor( new[] { typeof(string[]) } ) is { } ctor )
+            lock ( BotCtorCache )
             {
-                return (IPlayer)ctor.Invoke( new object[] { args } );
+                if ( !BotCtorCache.TryGetValue( fileName, out ctor ) )
+                {
+                    try
+                    {
+                        ctor = GetBotCtorUncached( fileName );
+
+                        BotCtorCache[fileName] = ctor;
+
+                        return ctor( args );
+                    }
+                    catch
+                    {
+                        BotCtorCache[fileName] = null;
+                    }
+                }
             }
-
-            return (IPlayer)Activator.CreateInstance( botType )!;
-        }
-        catch
-        {
-            //
         }
 
-        return new ChildProcessPlayer( player, fileName, args );
+        return ctor?.Invoke( args ) ?? new ChildProcessPlayer( player, fileName, args );
     }
 
     private ChildProcessPlayer( Player player, string fileName, params string[] args )
